@@ -1,6 +1,10 @@
 // Parsers for browser history exports. Everything runs locally.
 // Each parser calls onVisit(url, timeMs | null) for every visit and returns stats.
 import type { SqlJsStatic } from 'sql.js';
+import { parseText } from './textParser.ts';
+
+// Plain-text and pasted history lives in its own module.
+export { parseText };
 
 export type OnVisit = (url: string, timeMs: number | null) => void;
 
@@ -135,30 +139,6 @@ export function parseJson(text: string, onVisit: OnVisit): ParseStats {
     else if (it.time) t = Date.parse(it.time);
     track(stats, t);
     onVisit(url, t);
-  }
-  return stats;
-}
-
-/**
- * Plain text: one URL or hostname per line. A line may optionally contain an
- * ISO date/time anywhere (e.g. "2026-11-16 09:12 https://www.bbc.com/"),
- * otherwise the visit time is unknown.
- */
-export function parseText(text: string, onVisit: OnVisit, label = 'Pasted list'): ParseStats {
-  const stats = newStats(label);
-  const urlRe = /(https?:\/\/[^\s"'<>]+)|((?:[a-z0-9-]+\.)+[a-z]{2,})/i;
-  const dateRe = /\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?/;
-  for (const line of text.split(/\r?\n/)) {
-    const m = line.match(urlRe);
-    if (!m) continue;
-    const d = line.replace(m[0], '').match(dateRe);
-    let t: number | null = null;
-    if (d) {
-      const parsed = Date.parse(d[0].replace(' ', 'T'));
-      if (!Number.isNaN(parsed)) t = parsed;
-    }
-    track(stats, t);
-    onVisit(m[0], t);
   }
   return stats;
 }
