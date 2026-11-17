@@ -33,23 +33,32 @@ Every visit to a matching host is scored against the attack timeline (UTC):
 The production build adds a strict Content Security Policy (`default-src 'none'; connect-src 'self'`),
 so the page can't send data anywhere.
 
-Host lists and timeline: `src/affectedSites.js`. Matching and scoring: `src/analyze.js`.
-Parsers: `src/parsers.js`.
+Written in TypeScript and built with webpack.
+
+- Host lists and timeline: `src/affectedSites.ts`
+- Matching and scoring: `src/analyze.ts`
+- Parsers: `src/parsers.ts`
+- UI: `src/App.tsx`, `src/Recommendations.tsx`
+- Build config: `webpack.config.mts`
 
 ## Develop
 
+Requires Node 24 or later (the tests and webpack config use Node's built-in TypeScript support).
+
 ```sh
 npm install
-npm run dev      # local dev server
-npm test         # parser and scoring tests
-npm run build    # static site in dist/
-npm run preview  # serve dist/ locally
+npm run dev        # dev server at http://localhost:5173
+npm run typecheck  # tsc --noEmit
+npm test           # parser and scoring tests
+npm run build      # static site in dist/
+npm run preview    # serve the production build locally
 ```
 
 ## Deploy to GitHub Pages
 
-`dist/` is plain static files with relative paths, so it works at any URL path.
+`npm run build` writes plain static files with relative paths to `dist/`, so the site works at any
+URL path. `dist/` is not committed: the workflow builds it and publishes it as a Pages artifact.
 
 1. Push to a GitHub repo on the `main` branch.
 2. Go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
-3. `.github/workflows/deploy.yml` tests, builds and deploys on every push to `main`.
+3. `.github/workflows/deploy.yml` typechecks, tests, builds and deploys `dist/` on every push to `main`.

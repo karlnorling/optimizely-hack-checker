@@ -6,7 +6,7 @@
 export const SOURCE_URL =
   'https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/';
 
-export const CATEGORIES = {
+export const CATEGORIES: Record<string, readonly string[]> = {
   'Banking & Finance': [
     'www.paychex.com', 'www.us.hsbc.com', 'equifax.com', 'my.equifax.com', 'signin.my.equifax.com',
     'www.equifax.com', 'smartasset.com', 'www.hsbc.com.hk', 'www.abnamro.de', 'www.abnamro.nl',
@@ -110,8 +110,8 @@ export const CATEGORIES = {
 // Earlier wave (13–16 Nov) that injected webshell.lol via Kissmetrics,
 // StorifyMe and Minute Media scripts. Only examples are named in the post.
 // "vidaxl" is named without a TLD, so every vidaxl.* domain is matched.
-export const EARLIER_WAVE_HOSTS = ['securitybank.com', 'faz.net', 'smh.com.au', 'foxsports.com'];
-export const EARLIER_WAVE_LABELS = ['vidaxl'];
+export const EARLIER_WAVE_HOSTS: readonly string[] = ['securitybank.com', 'faz.net', 'smh.com.au', 'foxsports.com'];
+export const EARLIER_WAVE_LABELS: readonly string[] = ['vidaxl'];
 
 // Timeline (all UTC).
 export const TIMELINE = {
@@ -125,9 +125,9 @@ export const TIMELINE = {
   cacheTail: Date.UTC(2026, 10, 18, 0, 0),
   earlierWaveStart: Date.UTC(2026, 10, 13, 0, 0),
   earlierWaveEnd: Date.UTC(2026, 10, 17, 0, 0),
-};
+} as const;
 
-export const TIMELINE_EVENTS = [
+export const TIMELINE_EVENTS: ReadonlyArray<readonly [iso: string, text: string]> = [
   ['2026-11-13T00:00Z', 'Earlier wave: webshell.lol injected via Kissmetrics, StorifyMe and Minute Media scripts (13–16 Nov)'],
   ['2026-11-16T02:21Z', 'Last clean capture of the BBC Optimizely snippet'],
   ['2026-11-16T04:21Z', 'First Optimizely snippet injection seen (BBC)'],
@@ -140,7 +140,7 @@ export const TIMELINE_EVENTS = [
   ['2026-11-16T21:52Z', "One infected snippet (TalkTalk's) remains"],
 ];
 
-export const HOST_CATEGORY = new Map();
+export const HOST_CATEGORY = new Map<string, string>();
 for (const [cat, hosts] of Object.entries(CATEGORIES)) {
   for (const h of hosts) HOST_CATEGORY.set(h, cat);
 }
@@ -149,23 +149,31 @@ export const TOTAL_HOSTS = HOST_CATEGORY.size;
 // Additional domains named in press coverage (BleepingComputer, TheCyberSecGuru)
 // where the exact infected hostname was not given. Matched on the whole domain,
 // so a hit here is lower confidence than a hit on the Report URI list.
-export const PRESS_NAMED_DOMAINS = [
+export const PRESS_NAMED_DOMAINS: readonly string[] = [
   'salesforce.com', 'hsbc.com', 'ikea.com', 'airfrance-klm.com', 'smartsheet.com',
   'opt.scheels.com', 'cnn.com', 'bbc.com', 'zoom.us', 'foxnews.com', 'gitlab.com',
   'equifax.com', 'ledger.com', 'peacocktv.com', 'talktalk.co.uk', 'optimizely.com',
 ];
 
 // Attacker infrastructure (IoCs). Any visit to these is a strong signal.
-export const IOC_DOMAINS = [
+export const IOC_DOMAINS: readonly string[] = [
   '1688360.cc', 'webshell.lol', 'linkforge.cc', 'ios-hack.icu',
   '5vobauua3ojpklx.icu', 'p55abnw2pnsz0bo.icu', 'eil786npto9u5bq.icu', '1y69gy2mdzaltz1.icu',
   'gm38duxoihbmy5o.icu', 'l7bcsnwc7nzr3uo.icu', 'je4ft3gn8vxudum.icu', 'q1ls1ho9x7wsxlu.icu',
 ];
-export const IOC_IPS = ['136.113.106.136', '34.96.213.201', '34.87.36.58'];
+export const IOC_IPS: readonly string[] = ['136.113.106.136', '34.96.213.201', '34.87.36.58'];
 
 // Per-domain overrides of the infection window where the sources give them.
 // Keys match the domain and all of its subdomains.
-export const WINDOW_OVERRIDES = {
+export interface WindowOverride {
+  /** Infection start (ms since epoch), if different from the global start. */
+  start?: number;
+  /** Clean-up time; null means no clean-up time has been published. */
+  end?: number | null;
+  note: string;
+}
+
+export const WINDOW_OVERRIDES: Record<string, WindowOverride> = {
   'zoom.us': { start: Date.UTC(2026, 10, 16, 11, 20), note: "Zoom's bundle was modified at 11:20 UTC" },
   'zoom.com': { start: Date.UTC(2026, 10, 16, 11, 20), note: "Zoom's bundle was modified at 11:20 UTC" },
   'ledger.com': { end: Date.UTC(2026, 10, 16, 20, 41), note: 'Ledger was cleaned at 20:41 UTC' },
