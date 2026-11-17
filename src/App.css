@@ -434,3 +434,89 @@ footer {
     font-size: 1.6rem;
   }
 }
+
+/* History file guide */
+.guide {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.guide .panel {
+  margin: 10px 0 0;
+  background: var(--bg);
+}
+
+.guide .tabpanel {
+  padding: 0;
+}
+
+.pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 12px;
+}
+
+.pickers label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 4px;
+}
+
+.pickers select {
+  font: inherit;
+  font-weight: 400;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  min-width: 160px;
+}
+
+.steps {
+  padding-left: 22px;
+  margin: 8px 0;
+}
+
+.steps li {
+  margin-bottom: 8px;
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.copy-btn {
+  padding: 0 8px;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  background: none;
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+.copy-btn:hover {
+  border-color: var(--accent);
+}
+
+.faq dt {
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.faq dd {
+  margin: 2px 0 0;
+}
+
+.guide details > summary {
+  cursor: pointer;
+}

@@ -15,6 +15,7 @@ import {
   TOTAL_HOSTS,
 } from './affectedSites.ts';
 import { Recommendations } from './Recommendations.tsx';
+import { HistoryGuide } from './HistoryGuide.tsx';
 
 /** A loaded history source: parse stats, or an error message. */
 export type Source = { name: string; error: string } | ({ name: string; error: null } & ParseStats);
@@ -44,107 +45,6 @@ const MATCH_LABEL: Record<MatchKind, string> = {
   press: 'Domain named in news',
   earlier: 'Earlier wave',
 };
-
-interface BrowserGuide {
-  name: string;
-  paths: ReadonlyArray<readonly [os: string, path: string]>;
-  note: string;
-}
-
-const BROWSER_GUIDES: readonly BrowserGuide[] = [
-  {
-    name: 'Chrome',
-    paths: [
-      ['macOS', '~/Library/Application Support/Google/Chrome/Default/History'],
-      ['Windows', '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\History'],
-      ['Linux', '~/.config/google-chrome/Default/History'],
-    ],
-    note: 'Other profiles live in "Profile 1", "Profile 2"… next to "Default". Quit Chrome, or copy the file somewhere else first (Windows locks it while Chrome is open).',
-  },
-  {
-    name: 'Edge',
-    paths: [
-      ['macOS', '~/Library/Application Support/Microsoft Edge/Default/History'],
-      ['Windows', '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\History'],
-      ['Linux', '~/.config/microsoft-edge/Default/History'],
-    ],
-    note: 'Quit Edge, or copy the file elsewhere first.',
-  },
-  {
-    name: 'Brave',
-    paths: [
-      ['macOS', '~/Library/Application Support/BraveSoftware/Brave-Browser/Default/History'],
-      ['Windows', '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\Default\\History'],
-      ['Linux', '~/.config/BraveSoftware/Brave-Browser/Default/History'],
-    ],
-    note: 'Quit Brave, or copy the file elsewhere first.',
-  },
-  {
-    name: 'Arc',
-    paths: [['macOS', '~/Library/Application Support/Arc/User Data/Default/History']],
-    note: 'Quit Arc, or copy the file elsewhere first.',
-  },
-  {
-    name: 'Firefox',
-    paths: [
-      ['macOS', '~/Library/Application Support/Firefox/Profiles/<profile>/places.sqlite'],
-      ['Windows', '%APPDATA%\\Mozilla\\Firefox\\Profiles\\<profile>\\places.sqlite'],
-      ['Linux', '~/.mozilla/firefox/<profile>/places.sqlite'],
-    ],
-    note: 'Quit Firefox completely first. Recent visits sit in "places.sqlite-wal" until Firefox closes, so if Firefox is still open, 16 November may be missing. about:profiles shows the profile folder.',
-  },
-  {
-    name: 'Safari',
-    paths: [['macOS', '~/Library/Safari/History.db']],
-    note: 'Quit Safari first so recent visits are written to the file. In Finder use Go → Go to Folder…, paste ~/Library/Safari, then copy History.db to your Desktop and select that copy. With iCloud sync on, this includes history from your iPhone and iPad.',
-  },
-  {
-    name: 'Google Takeout',
-    paths: [['Any', 'takeout.google.com → Chrome → BrowserHistory.json']],
-    note: 'Covers Chrome history synced to your Google account, including Chrome on phones.',
-  },
-];
-
-function HowTo() {
-  const [open, setOpen] = useState('Chrome');
-  const guide = BROWSER_GUIDES.find((g) => g.name === open) ?? BROWSER_GUIDES[0]!;
-  return (
-    <div className="howto">
-      <div className="tabs" role="tablist">
-        {BROWSER_GUIDES.map((g) => (
-          <button
-            key={g.name}
-            role="tab"
-            aria-selected={open === g.name}
-            className={open === g.name ? 'tab active' : 'tab'}
-            onClick={() => setOpen(g.name)}
-          >
-            {g.name}
-          </button>
-        ))}
-      </div>
-      <div className="tabpanel" role="tabpanel">
-        <table className="paths">
-          <tbody>
-            {guide.paths.map(([os, p]) => (
-              <tr key={os}>
-                <th>{os}</th>
-                <td>
-                  <code>{p}</code>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="muted">{guide.note}</p>
-        <p className="muted small">
-          macOS tip: in the file picker press <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>G</kbd> to type a path, or{' '}
-          <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>.</kbd> to show hidden folders such as Library.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function Coverage({ sources }: { sources: Source[] }) {
   if (!sources.length) return null;
@@ -411,10 +311,10 @@ export default function App() {
       <section>
         <h2>1. Find your history file</h2>
         <p className="muted">
-          Web pages can't read your browser history, so you need to select the file yourself. You can load several
-          files, for example one per browser or profile.
+          Web pages aren't allowed to read your browser history, so you need to give this page a copy of the
+          history file. It takes about two minutes. Pick your computer and browser for step-by-step instructions.
         </p>
-        <HowTo />
+        <HistoryGuide />
       </section>
 
       <section>
