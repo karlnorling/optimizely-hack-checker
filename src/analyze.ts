@@ -48,6 +48,10 @@ export interface Finding {
   risk: Risk;
   visits: Visit[];
   totalVisits: number;
+  /** Visits inside the attack window (or with unknown time), uncapped. */
+  windowVisits: number;
+  /** Timed visits outside the attack window. */
+  outsideVisits: number;
   sources: Set<string>;
   window: InfectionWindow;
 }
@@ -56,7 +60,6 @@ export interface Flags {
   ioc: boolean;
   cardSkimmer: boolean;
   crypto: boolean;
-  iosExploit: boolean;
   cryptoSite: boolean;
   unknownTimes: boolean;
 }
@@ -149,18 +152,24 @@ export function assessVisit(host: string, match: Match | null, timeMs: number | 
   if (timeMs == null || Number.isNaN(timeMs)) return 'unknown';
 
   if (match.kind === 'ioc') {
-    // Attacker infrastructure was first seen in mid-September 2026.
-    return timeMs >= Date.UTC(2026, 8, 1) ? 'high' : 'none';
+    // Attacker infrastructure was first seen in mid-September 2026; the
+    // window ends when Optimizely confirmed the injected code was removed.
+    // Later visits (e.g. while researching the attack) are not counted.
+    return timeMs >= TIMELINE.iocFirstSeen && timeMs <= TIMELINE.statement ? 'high' : 'none';
   }
 
   // Only visits inside the attack window count. A listed host is "high"; a
   // related host or a domain only named in the news is "possible", because
-  // the time is right but the exact page may not have been infected.
+  // the time is right but the exact page may not have been infected. The
+  // gap between the last clean capture (02:21) and the first infected one
+  // (04:21) is "possible" too, since the injection happened somewhere in it.
   let risk: Risk = 'none';
   if (match.kind !== 'earlier') {
     const w = windowFor(host);
     if (timeMs >= w.start && timeMs <= w.end) {
       risk = match.kind === 'listed' ? 'high' : 'possible';
+    } else if (timeMs >= TIMELINE.lastClean && timeMs < w.start && w.start === TIMELINE.firstInfected) {
+      risk = 'possible';
     }
   }
   if (risk === 'none' && match.earlier) {
@@ -194,10 +203,12 @@ export class Analyzer {
     const risk = assessVisit(host, match, timeMs);
     let f = this.findings.get(host);
     if (!f) {
-      f = { host, match, risk: 'none', visits: [], totalVisits: 0, sources: new Set(), window: windowFor(host) };
+      f = { host, match, risk: 'none', visits: [], totalVisits: 0, windowVisits: 0, outsideVisits: 0, sources: new Set(), window: windowFor(host) };
       this.findings.set(host, f);
     }
     f.totalVisits++;
+    if (risk !== 'none') f.windowVisits++;
+    else if (timeMs != null && !Number.isNaN(timeMs)) f.outsideVisits++;
     f.sources.add(source);
     f.risk = worse(f.risk, risk);
     if (risk !== 'none' && f.visits.length < MAX_VISITS_PER_HOST) {
@@ -225,7 +236,6 @@ export class Analyzer {
         // The webshell.lol injector was active before the clipper payload was
         // built at 08:10 UTC, so any exposed visit counts.
         crypto: exposed.length > 0,
-        iosExploit: exposedVisits.some((v) => v.time == null || v.time >= TIMELINE.firstInfected),
         cryptoSite: exposed.some(
           (f) => f.match.category === 'Crypto & Trading' || f.match.category === 'Banking & Finance',
         ),

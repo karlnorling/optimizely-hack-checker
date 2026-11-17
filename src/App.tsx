@@ -92,10 +92,11 @@ function Summary({ result, sources }: { result: Results; sources: Source[] }) {
     high:
       `You visited ${high === 1 ? 'an affected site' : `${high} affected sites`} while the malicious script was live.` +
       (others ? ` ${others} more ${others === 1 ? 'needs' : 'need'} a closer look.` : ''),
-    possible: 'You visited affected sites close to the infection window. Exposure is possible but not confirmed.',
+    possible:
+      'During the attack you visited related pages on affected domains, or sites from the earlier wave. Exposure is possible but not confirmed.',
     unknown: 'You visited affected sites, but the visit times are unknown.',
     none: result.findings.length
-      ? 'You visited affected sites, but not during the infection window.'
+      ? 'You visited affected sites, but not during the published attack window.'
       : 'None of the affected sites appear in this history.',
   } satisfies Record<Risk, string>)[overall];
   return (
@@ -111,8 +112,10 @@ function Summary({ result, sources }: { result: Results; sources: Source[] }) {
 function Findings({ findings }: { findings: Results['findings'] }) {
   // Only visits inside the attack window are shown; the rest are just counted.
   const visible = findings.filter((f) => f.risk !== 'none');
-  const outside = findings.filter((f) => f.risk === 'none');
-  const outsideVisits = outside.reduce((n, f) => n + f.totalVisits, 0);
+  // Count outside-window visits on every site, including listed ones that
+  // also had visits during the attack.
+  const outside = findings.filter((f) => f.outsideVisits > 0);
+  const outsideVisits = outside.reduce((n, f) => n + f.outsideVisits, 0);
   if (!findings.length) return null;
   return (
     <section>
@@ -125,7 +128,7 @@ function Findings({ findings }: { findings: Results['findings'] }) {
             <span className="muted small">
               {MATCH_LABEL[f.match.kind]}
               {f.match.kind === 'subdomain' || f.match.kind === 'press' ? ` (${f.match.key})` : ''} · {f.match.category} ·{' '}
-              {f.visits.length} visit{f.visits.length === 1 ? '' : 's'}
+              {f.windowVisits} visit{f.windowVisits === 1 ? '' : 's'}
               {f.risk === 'unknown' ? ', time unknown' : ' in the attack window'}
             </span>
           </summary>
@@ -138,6 +141,9 @@ function Findings({ findings }: { findings: Results['findings'] }) {
           )}
           {f.match.earlier && (
             <p className="small muted">This domain was also hit by the earlier webshell.lol wave (13–16 Nov).</p>
+          )}
+          {f.windowVisits > f.visits.length && (
+            <p className="small muted">Showing the first {f.visits.length} of {f.windowVisits} visits.</p>
           )}
           {f.visits.length > 0 && (
             <table className="visits">
@@ -170,7 +176,7 @@ function Findings({ findings }: { findings: Results['findings'] }) {
       {outside.length > 0 && (
         <p className="small muted">
           Not shown: {outsideVisits.toLocaleString()} visit{outsideVisits === 1 ? '' : 's'} to {outside.length} affected
-          site{outside.length === 1 ? '' : 's'} outside the attack window. Those visits weren't exposed.
+          site{outside.length === 1 ? '' : 's'} outside the published attack window.
         </p>
       )}
     </section>
@@ -200,10 +206,13 @@ function Timeline() {
       </ol>
       <p className="small muted">
         Only visits inside the attack window are shown. The window is 04:21 to 21:52 UTC on 16 Nov, using each
-        site's own start and clean-up time where published, or 13–16 Nov for sites hit by the earlier wave.{' '}
-        <b>High</b> means a listed host. <b>Possible</b> means a related host on the same domain, a domain named only in
-        news coverage, or the earlier wave. <b>Unknown</b> means a pasted visit without a time. Visits outside the
-        window are counted but not listed.
+        site's own start and clean-up time where published. TalkTalk had no published clean-up, so it runs until
+        Optimizely's statement at 01:02 UTC on 17 Nov. Sites hit by the earlier wave are checked for 13–16 Nov.{' '}
+        <b>High</b> means a listed host inside its window. <b>Possible</b> means a related host on the same domain, a
+        domain named only in news coverage, the earlier wave, or a visit between the last clean capture (02:21) and
+        the first infected one (04:21). <b>Unknown</b> means a pasted visit without a time. Visits to attacker
+        domains count from September until Optimizely's statement. Visits outside the window are counted but not
+        listed.
       </p>
     </details>
   );

@@ -31,21 +31,26 @@ test('host matching', () => {
 test('visit risk windows', () => {
   const m = matchHost('www.bbc.com');
   assert.equal(assessVisit('www.bbc.com', m, utc(10)), 'high');
-  assert.equal(assessVisit('www.bbc.com', m, utc(3)), 'none'); // before first sighting 04:21
+  assert.equal(assessVisit('www.bbc.com', m, utc(3)), 'possible'); // between last clean 02:21 and first infected 04:21
+  assert.equal(assessVisit('www.bbc.com', m, utc(2)), 'none'); // before last clean capture
   assert.equal(assessVisit('www.bbc.com', m, utc(21, 30)), 'none'); // cleaned 21:07
   assert.equal(assessVisit('www.bbc.com', m, utc(10, 0, 17)), 'none'); // next day
   assert.equal(assessVisit('www.bbc.com', m, utc(10, 0, 18)), 'none');
   assert.equal(assessVisit('www.bbc.com', m, null), 'unknown');
   const z = matchHost('zoom.us');
   assert.equal(assessVisit('zoom.us', z, utc(9)), 'none'); // before 11:20 override
+  assert.equal(assessVisit('zoom.us', z, utc(3)), 'none'); // own start, so no 02:21 margin
   assert.equal(assessVisit('zoom.us', z, utc(12)), 'high');
   const t = matchHost('www.talktalk.co.uk');
   assert.equal(assessVisit('www.talktalk.co.uk', t, utc(23)), 'high'); // never confirmed clean
-  assert.equal(assessVisit('www.talktalk.co.uk', t, utc(1, 0, 17)), 'none');
+  assert.equal(assessVisit('www.talktalk.co.uk', t, utc(1, 0, 17)), 'high'); // until Optimizely's 01:02 statement
+  assert.equal(assessVisit('www.talktalk.co.uk', t, utc(1, 5, 17)), 'none');
   const s = matchHost('status.optimizely.com');
   assert.equal(assessVisit('status.optimizely.com', s, utc(10)), 'possible');
   assert.equal(assessVisit('status.optimizely.com', s, utc(8, 0, 17)), 'none'); // reading about it today
   assert.equal(assessVisit('1688360.cc', matchHost('1688360.cc'), Date.UTC(2025, 0, 1)), 'none');
+  assert.equal(assessVisit('1688360.cc', matchHost('1688360.cc'), utc(10)), 'high');
+  assert.equal(assessVisit('1688360.cc', matchHost('1688360.cc'), utc(10, 0, 17)), 'none'); // researching it later
   const e = matchHost('www.faz.net');
   assert.equal(assessVisit('www.faz.net', e, utc(10, 0, 14)), 'possible');
   assert.equal(assessVisit('www.faz.net', e, utc(10, 0, 20)), 'none');
@@ -100,4 +105,16 @@ test('unrelated SQLite rejected', () => {
   const db = new SQL.Database();
   db.run('CREATE TABLE foo(x)');
   assert.throws(() => parseSqlite(SQL, db.export(), () => {}), /not a recognised/);
+});
+
+test('counts window and outside visits separately, uncapped', () => {
+  const a = new Analyzer();
+  for (let i = 0; i < 250; i++) a.add('https://www.bbc.com/news/' + i, utc(10), 'file');
+  a.add('https://www.bbc.com/', utc(10, 0, 18), 'file');
+  a.add('https://www.bbc.com/', null, 'file');
+  const f = a.results().findings[0]!;
+  assert.equal(f.windowVisits, 251);
+  assert.equal(f.outsideVisits, 1);
+  assert.equal(f.visits.length, 200);
+  assert.equal(f.totalVisits, 252);
 });

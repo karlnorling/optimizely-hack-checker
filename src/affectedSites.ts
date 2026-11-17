@@ -120,9 +120,13 @@ export const TIMELINE = {
   skimmerAdded: Date.UTC(2026, 10, 16, 13, 43), // card skimmer added to payload
   iosExploitAdded: Date.UTC(2026, 10, 16, 17, 13), // iOS exploit iframe injected
   lastInfected: Date.UTC(2026, 10, 16, 21, 52), // only one infected snippet left (TalkTalk)
+  // Optimizely's statement that the injected code was removed.
+  statement: Date.UTC(2026, 10, 17, 1, 2),
   // Sites with no published clean-up time (TalkTalk) count as infected until
-  // the end of 16 Nov UTC, the last point anything was observed.
-  noCleanupEnd: Date.UTC(2026, 10, 17, 0, 0),
+  // Optimizely's statement, the first confirmation that everything was clean.
+  noCleanupEnd: Date.UTC(2026, 10, 17, 1, 2),
+  // Attacker infrastructure was first seen in mid-September; allow from 1 Sep.
+  iocFirstSeen: Date.UTC(2026, 8, 1),
   earlierWaveStart: Date.UTC(2026, 10, 13, 0, 0),
   earlierWaveEnd: Date.UTC(2026, 10, 17, 0, 0),
 } as const;

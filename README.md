@@ -24,13 +24,14 @@ Only visits inside the attack window are reported (UTC):
 
 - **high**: a listed host between 04:21 and 21:52 on 16 Nov, using per-site start and clean-up
   times where published (Zoom from 11:20; Ledger, Smartsheet and BBC clean-up times; TalkTalk,
-  with no published clean-up, until the end of 16 Nov).
+  with no published clean-up, until Optimizely's statement at 01:02 UTC on 17 Nov).
 - **possible**: inside the window, but on a related host of a listed domain or a domain named only
-  in news coverage; or a visit to an earlier-wave site (webshell.lol, 13–16 Nov).
+  in news coverage; a visit between the last clean capture (02:21) and the first infected one
+  (04:21); or a visit to an earlier-wave site (webshell.lol, 13–16 Nov).
 - **unknown**: a pasted visit with no date or time.
 - Visits outside the window are counted but not listed.
-- Visits to attacker domains (`1688360.cc`, the `.icu` routers, `webshell.lol`, …) are flagged
-  separately.
+- Visits to attacker domains (`1688360.cc`, the `.icu` routers, `webshell.lol`, …) are high from
+  September until Optimizely's statement; later visits (e.g. while researching) are not flagged.
 
 The production build adds a strict Content Security Policy (`default-src 'none'; connect-src 'self'`),
 so the page can't send data anywhere.
