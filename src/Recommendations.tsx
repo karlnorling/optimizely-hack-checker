@@ -15,8 +15,8 @@ export function Recommendations({ result }: { result: Results }) {
           <ul>
             <li>Check your other browsers, profiles and devices, especially phones and tablets.</li>
             <li>
-              Private or incognito windows aren't recorded in history. If you used one on 16 November, use the
-              checklist below anyway.
+              Private or incognito windows aren't recorded in history. If you used one on 16 November, use the checklist
+              below anyway.
             </li>
             <li>Keep your iPhone and iPad up to date (iOS 18.7.3 or later, or 26.3 or later).</li>
           </ul>
@@ -40,7 +40,10 @@ export function Recommendations({ result }: { result: Results }) {
           </p>
           <ul>
             <li>Do every step below, starting with the ones for your device and wallets.</li>
-            <li>If this history came from an iPhone or iPad (Safari with iCloud sync), treat that device as possibly compromised.</li>
+            <li>
+              If this history came from an iPhone or iPad (Safari with iCloud sync), treat that device as possibly
+              compromised.
+            </li>
           </ul>
         </div>
       )}
@@ -58,17 +61,20 @@ export function Recommendations({ result }: { result: Results }) {
       <div className="rec">
         <h3>📱 iPhone and iPad</h3>
         <p>
-          On iOS the script loaded the <em>Coruna</em> and <em>DarkSword</em> exploit kits in a hidden frame. Pages on iOS 18.6 or
-          earlier reloaded every 60 seconds.
+          On iOS the script loaded the <em>Coruna</em> and <em>DarkSword</em> exploit kits in a hidden frame. Pages on
+          iOS 18.6 or earlier reloaded every 60 seconds.
         </p>
         <ul>
           <li>
-            Update now to <strong>iOS 18.7.3 or later</strong>, or <strong>26.3 or later</strong>. Older devices can use Apple's March 2026
-            updates (iOS 15.8.7 and 16.7.15).
+            Update now to <strong>iOS 18.7.3 or later</strong>, or <strong>26.3 or later</strong>. Older devices can use
+            Apple's March 2026 updates (iOS 15.8.7 and 16.7.15).
           </li>
           <li>If you visited these sites on an iPhone or iPad running older iOS, restart the device after updating.</li>
           <li>Change the passwords saved in your iCloud Keychain, starting with email, banking and crypto.</li>
-          <li>If you're a high-risk user (journalist, activist, executive, crypto holder), consider turning on Lockdown Mode.</li>
+          <li>
+            If you're a high-risk user (journalist, activist, executive, crypto holder), consider turning on Lockdown
+            Mode.
+          </li>
         </ul>
       </div>
 
@@ -76,8 +82,8 @@ export function Recommendations({ result }: { result: Results }) {
         <div className={`rec ${flags.cryptoSite ? 'urgent' : ''}`}>
           <h3>🪙 Crypto transfers</h3>
           <p>
-            The script swapped wallet addresses for the attacker's on eight chains: BTC, ETH/EVM, TRON, SOL, TON, LTC, BCH
-            and DOGE. It did this on the page, in the clipboard, in form fields and in outgoing requests.
+            The script swapped wallet addresses for the attacker's on eight chains: BTC, ETH/EVM, TRON, SOL, TON, LTC,
+            BCH and DOGE. It did this on the page, in the clipboard, in form fields and in outgoing requests.
           </p>
           <ul>
             <li>
@@ -102,18 +108,20 @@ export function Recommendations({ result }: { result: Results }) {
         <h3>💳 Payment cards</h3>
         {flags.cardSkimmer ? (
           <p>
-            You visited an affected site after <strong>13:43 UTC</strong>, when a card skimmer was added. It captured the card
-            number, expiry date and CVV from the site's own payment forms. Payment fields hosted in a separate frame
-            (Stripe, Adyen and similar) were not readable.
+            You visited an affected site after <strong>13:43 UTC</strong>, when a card skimmer was added. It captured
+            the card number, expiry date and CVV from the site's own payment forms. Payment fields hosted in a separate
+            frame (Stripe, Adyen and similar) were not readable.
           </p>
         ) : (
-          <p>
-            Your visits came before the card skimmer was added at 13:43 UTC, so the risk to card details is lower.
-          </p>
+          <p>Your visits came before the card skimmer was added at 13:43 UTC, so the risk to card details is lower.</p>
         )}
         <ul>
-          <li>If you entered card details on one of these sites on 16 November, call your bank and ask for a new card.</li>
-          <li>Check your statements for unfamiliar charges, including small test payments, over the next few months.</li>
+          <li>
+            If you entered card details on one of these sites on 16 November, call your bank and ask for a new card.
+          </li>
+          <li>
+            Check your statements for unfamiliar charges, including small test payments, over the next few months.
+          </li>
           <li>Turn on transaction alerts in your banking app.</li>
         </ul>
       </div>
@@ -126,8 +134,8 @@ export function Recommendations({ result }: { result: Results }) {
         </p>
         <ul>
           <li>
-            Sign out of every session on these sites and sign back in. Change your password if you were signed in
-            during the window
+            Sign out of every session on these sites and sign back in. Change your password if you were signed in during
+            the window
             {loggedInSites.length > 0 && (
               <>
                 : <span className="hosts">{loggedInSites.slice(0, 12).join(', ')}</span>

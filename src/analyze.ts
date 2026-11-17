@@ -111,8 +111,7 @@ export function matchHost(host: string | null): Match | null {
   const ioc = findInSet(host, IOC_SET);
   if (ioc) return { kind: 'ioc', key: ioc, category: 'Attacker infrastructure' };
 
-  const earlier =
-    !!findInSet(host, EARLIER_SET) || host.split('.').some((l) => EARLIER_WAVE_LABELS.includes(l));
+  const earlier = !!findInSet(host, EARLIER_SET) || host.split('.').some((l) => EARLIER_WAVE_LABELS.includes(l));
 
   const exact = HOST_CATEGORY.get(host);
   if (exact) return { kind: 'listed', key: host, category: exact, earlier };
@@ -203,7 +202,17 @@ export class Analyzer {
     const risk = assessVisit(host, match, timeMs);
     let f = this.findings.get(host);
     if (!f) {
-      f = { host, match, risk: 'none', visits: [], totalVisits: 0, windowVisits: 0, outsideVisits: 0, sources: new Set(), window: windowFor(host) };
+      f = {
+        host,
+        match,
+        risk: 'none',
+        visits: [],
+        totalVisits: 0,
+        windowVisits: 0,
+        outsideVisits: 0,
+        sources: new Set(),
+        window: windowFor(host),
+      };
       this.findings.set(host, f);
     }
     f.totalVisits++;

@@ -31,7 +31,13 @@ test('macOS Chrome commands', () => {
 });
 
 test('Firefox glob stays unescaped; Safari has no profiles', () => {
-  const ff = historyCommands({ shell: 'sh', root: '~/.mozilla/firefox', profile: '*.default-release', file: 'places.sqlite', label: 'Firefox' });
+  const ff = historyCommands({
+    shell: 'sh',
+    root: '~/.mozilla/firefox',
+    profile: '*.default-release',
+    file: 'places.sqlite',
+    label: 'Firefox',
+  });
   assert.equal(ff.copy, 'cp ~/.mozilla/firefox/*.default-release/places.sqlite ~/Desktop/Firefox-History.sqlite');
   const sf = historyCommands({ shell: 'sh', root: '~/Library/Safari', file: 'History.db', label: 'Safari', mac: true });
   assert.equal(sf.list, undefined);

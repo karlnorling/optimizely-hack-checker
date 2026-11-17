@@ -2,7 +2,7 @@
 
 A client-side-only page that checks your browser history against the sites hit by the
 16 November 2026 Optimizely supply-chain attack, and gives recommendations based on
-*when* you visited them.
+_when_ you visited them.
 
 Sources: [Report URI](https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/),
 [BleepingComputer](https://www.bleepingcomputer.com/news/security/optimizely-supply-chain-attack-delivers-malware-to-cnn-fox-news-bbc-salesforce-sites/),
@@ -12,13 +12,13 @@ Sources: [Report URI](https://blog.report-uri.com/worlds-largest-brands-infected
 
 Web pages can't read browser history, so the user selects the history file and it is parsed locally:
 
-| Browser | File | Parsed with |
-| --- | --- | --- |
-| Chrome / Edge / Brave / Arc / Opera / Vivaldi | `History` | sql.js (SQLite → WASM) |
-| Firefox | `places.sqlite` | sql.js |
-| Safari | `History.db` | sql.js |
-| Google Takeout | `BrowserHistory.json` | JSON |
-| Anything | pasted URLs/hosts (optionally with ISO timestamps) | text |
+| Browser                                       | File                                               | Parsed with            |
+| --------------------------------------------- | -------------------------------------------------- | ---------------------- |
+| Chrome / Edge / Brave / Arc / Opera / Vivaldi | `History`                                          | sql.js (SQLite → WASM) |
+| Firefox                                       | `places.sqlite`                                    | sql.js                 |
+| Safari                                        | `History.db`                                       | sql.js                 |
+| Google Takeout                                | `BrowserHistory.json`                              | JSON                   |
+| Anything                                      | pasted URLs/hosts (optionally with ISO timestamps) | text                   |
 
 Only visits inside the attack window are reported (UTC):
 
@@ -53,9 +53,14 @@ npm install
 npm run dev        # dev server at http://localhost:5173
 npm run typecheck  # tsc --noEmit
 npm test           # parser and scoring tests
+npm run lint       # oxlint
+npm run format     # oxfmt (format:check in CI)
 npm run build      # static site in dist/
 npm run preview    # serve the production build locally
 ```
+
+The CI workflow (`.github/workflows/ci.yml`) runs lint, format check, typecheck, unit tests and
+build on every pull request and push to `main`.
 
 ## Deploy to GitHub Pages
 

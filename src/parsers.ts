@@ -144,11 +144,7 @@ export function parseJson(text: string, onVisit: OnVisit): ParseStats {
 }
 
 /** Dispatch on file content. `getSql` lazily initialises sql.js. */
-export async function parseFile(
-  file: File,
-  getSql: () => Promise<SqlJsStatic>,
-  onVisit: OnVisit,
-): Promise<ParseStats> {
+export async function parseFile(file: File, getSql: () => Promise<SqlJsStatic>, onVisit: OnVisit): Promise<ParseStats> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (isSqlite(bytes)) {
     const SQL = await getSql();

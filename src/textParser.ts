@@ -17,9 +17,22 @@
 import type { OnVisit, ParseStats } from './parsers.ts';
 
 const MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11,
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  sept: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
 };
-const MONTH_RE = '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?';
+const MONTH_RE =
+  '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?';
 
 const URL_RE = /\bhttps?:\/\/[^\s"'<>,]+/i;
 const HOST_TOKEN_RE = /(?<![@\w.-])((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,})(?![\w-])/i;
@@ -170,11 +183,14 @@ export interface TextParseOptions {
   now?: Date;
 }
 
-export function parseText(text: string, onVisit: OnVisit, label = 'Pasted list', opts: TextParseOptions = {}): ParseStats {
+export function parseText(
+  text: string,
+  onVisit: OnVisit,
+  label = 'Pasted list',
+  opts: TextParseOptions = {},
+): ParseStats {
   const stats: ParseStats = { browser: label, visits: 0, minTime: null, maxTime: null };
-  const base = opts.now
-    ? { y: opts.now.getFullYear(), m: opts.now.getMonth(), d: opts.now.getDate() }
-    : today();
+  const base = opts.now ? { y: opts.now.getFullYear(), m: opts.now.getMonth(), d: opts.now.getDate() } : today();
 
   // State for grouped history-page pastes.
   let groupDate: Ymd | null = null;
