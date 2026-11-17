@@ -138,6 +138,7 @@ export const TIMELINE_EVENTS: ReadonlyArray<readonly [iso: string, text: string]
   ['2026-11-16T19:24Z', 'Researchers find 186 of 1,611 snippets infected'],
   ['2026-11-16T20:40Z', 'Mass clean-up begins (Ledger, Smartsheet, BBC)'],
   ['2026-11-16T21:52Z', "One infected snippet (TalkTalk's) remains"],
+  ['2026-11-17T01:02Z', 'Optimizely posts an official statement: vulnerability fixed, injected code removed'],
 ];
 
 export const HOST_CATEGORY = new Map<string, string>();

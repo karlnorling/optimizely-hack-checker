@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { historyCommands } from './commands.ts';
 
 export type OS = 'mac' | 'windows' | 'linux';
 export type BrowserId = 'chrome' | 'edge' | 'brave' | 'arc' | 'opera' | 'vivaldi' | 'firefox' | 'safari';
@@ -9,8 +10,13 @@ interface BrowserInfo {
   family: 'chromium' | 'firefox' | 'safari';
   /** Internal page that shows the profile folder; web pages can't link to these. */
   profilePage?: { url: string; field: string };
-  /** Typical folder holding the history file, per OS. */
-  folders: Partial<Record<OS, string>>;
+  /**
+   * Per OS: the folder holding the history file or, for browsers with
+   * profiles, the parent folder that holds every profile folder.
+   */
+  roots: Partial<Record<OS, string>>;
+  /** Profile folder used when the user hasn't chosen one; absent = no profiles. */
+  defaultProfile?: string;
   file: string;
 }
 
@@ -20,11 +26,12 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Chrome',
     family: 'chromium',
     profilePage: { url: 'chrome://version', field: 'Profile Path' },
-    folders: {
-      mac: '~/Library/Application Support/Google/Chrome/Default',
-      windows: '%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default',
-      linux: '~/.config/google-chrome/Default',
+    roots: {
+      mac: '~/Library/Application Support/Google/Chrome',
+      windows: '%LOCALAPPDATA%\\Google\\Chrome\\User Data',
+      linux: '~/.config/google-chrome',
     },
+    defaultProfile: 'Default',
     file: 'History',
   },
   {
@@ -32,11 +39,12 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Edge',
     family: 'chromium',
     profilePage: { url: 'edge://version', field: 'Profile path' },
-    folders: {
-      mac: '~/Library/Application Support/Microsoft Edge/Default',
-      windows: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default',
-      linux: '~/.config/microsoft-edge/Default',
+    roots: {
+      mac: '~/Library/Application Support/Microsoft Edge',
+      windows: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data',
+      linux: '~/.config/microsoft-edge',
     },
+    defaultProfile: 'Default',
     file: 'History',
   },
   {
@@ -44,11 +52,12 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Brave',
     family: 'chromium',
     profilePage: { url: 'brave://version', field: 'Profile Path' },
-    folders: {
-      mac: '~/Library/Application Support/BraveSoftware/Brave-Browser/Default',
-      windows: '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\Default',
-      linux: '~/.config/BraveSoftware/Brave-Browser/Default',
+    roots: {
+      mac: '~/Library/Application Support/BraveSoftware/Brave-Browser',
+      windows: '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data',
+      linux: '~/.config/BraveSoftware/Brave-Browser',
     },
+    defaultProfile: 'Default',
     file: 'History',
   },
   {
@@ -56,7 +65,8 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Arc',
     family: 'chromium',
     profilePage: { url: 'chrome://version', field: 'Profile Path' },
-    folders: { mac: '~/Library/Application Support/Arc/User Data/Default' },
+    roots: { mac: '~/Library/Application Support/Arc/User Data' },
+    defaultProfile: 'Default',
     file: 'History',
   },
   {
@@ -64,7 +74,7 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Opera',
     family: 'chromium',
     profilePage: { url: 'opera://about', field: 'Profile' },
-    folders: {
+    roots: {
       mac: '~/Library/Application Support/com.operasoftware.Opera',
       windows: '%APPDATA%\\Opera Software\\Opera Stable',
       linux: '~/.config/opera',
@@ -76,11 +86,12 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Vivaldi',
     family: 'chromium',
     profilePage: { url: 'vivaldi://about', field: 'Profile Path' },
-    folders: {
-      mac: '~/Library/Application Support/Vivaldi/Default',
-      windows: '%LOCALAPPDATA%\\Vivaldi\\User Data\\Default',
-      linux: '~/.config/vivaldi/Default',
+    roots: {
+      mac: '~/Library/Application Support/Vivaldi',
+      windows: '%LOCALAPPDATA%\\Vivaldi\\User Data',
+      linux: '~/.config/vivaldi',
     },
+    defaultProfile: 'Default',
     file: 'History',
   },
   {
@@ -88,21 +99,31 @@ const BROWSERS: readonly BrowserInfo[] = [
     name: 'Firefox',
     family: 'firefox',
     profilePage: { url: 'about:profiles', field: 'Root Directory' },
-    folders: {
-      mac: '~/Library/Application Support/Firefox/Profiles/<name>.default-release',
-      windows: '%APPDATA%\\Mozilla\\Firefox\\Profiles\\<name>.default-release',
-      linux: '~/.mozilla/firefox/<name>.default-release',
+    roots: {
+      mac: '~/Library/Application Support/Firefox/Profiles',
+      windows: '%APPDATA%\\Mozilla\\Firefox\\Profiles',
+      linux: '~/.mozilla/firefox',
     },
+    defaultProfile: '*.default-release',
     file: 'places.sqlite',
   },
   {
     id: 'safari',
     name: 'Safari',
     family: 'safari',
-    folders: { mac: '~/Library/Safari' },
+    roots: { mac: '~/Library/Safari' },
     file: 'History.db',
   },
 ];
+
+const sepFor = (os: OS) => (os === 'windows' ? '\\' : '/');
+
+/** Full folder holding the history file for a browser, OS and profile. */
+function folderFor(b: BrowserInfo, os: OS, profile?: string): string | undefined {
+  const root = b.roots[os];
+  if (!root || b.defaultProfile === undefined) return root;
+  return root + sepFor(os) + (profile || b.defaultProfile);
+}
 
 const OS_NAMES: Record<OS, string> = { mac: 'macOS', windows: 'Windows', linux: 'Linux' };
 
@@ -213,8 +234,10 @@ function CopyFile({ os, file }: { os: OS; file: string }) {
   );
 }
 
-function Steps({ b, os }: { b: BrowserInfo; os: OS }) {
-  const folder = b.folders[os];
+function Steps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) {
+  // Finder and Explorer can't expand wildcards, so for Firefox point at the
+  // Profiles folder and let the user pick the profile folder inside it.
+  const folder = b.family === 'firefox' ? b.roots[os] : folderFor(b, os, profile);
 
   if (b.family === 'safari') {
     return (
@@ -255,15 +278,35 @@ function Steps({ b, os }: { b: BrowserInfo; os: OS }) {
             </>
           ) : (
             <>
-              Copy the folder shown next to <b>{b.profilePage.field}</b>. This is the profile you're using right now;
-              repeat these steps in each profile if you have several.
+              Copy the folder shown next to <b>{b.profilePage.field}</b>. This is the profile you're using right now.
+              {b.defaultProfile && (
+                <>
+                  {' '}
+                  It ends in <code>Default</code>, or <code>Profile 1</code>, <code>Profile 2</code> and so on if
+                  you've ever added a profile. Type that last part into <b>Profile folder</b> above to update the
+                  paths and commands on this page.
+                </>
+              )}
             </>
           )}
         </li>
       )}
       <OpenFolderStep
         os={os}
-        folder={folder ? <>the folder from step 1 (usually <CopyText text={folder} />)</> : 'the folder from step 1'}
+        folder={
+          b.family === 'firefox' && folder ? (
+            <>
+              <CopyText text={folder} /> and open the folder whose name ends in <code>.default-release</code>
+            </>
+          ) : folder ? (
+            <>
+              the folder from step 1 (for the <b>{profile || b.defaultProfile || 'default'}</b> profile that's{' '}
+              <CopyText text={folder} />)
+            </>
+          ) : (
+            'the folder from step 1'
+          )
+        }
       />
       <li>
         Find the file named <code>{b.file}</code>
@@ -310,8 +353,123 @@ function Steps({ b, os }: { b: BrowserInfo; os: OS }) {
   );
 }
 
-function FallbackPaths({ b, os }: { b: BrowserInfo; os: OS }) {
-  const others = (Object.keys(b.folders) as OS[]).filter((o) => o !== os);
+function CommandBlock({ cmd }: { cmd: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked: the command is still selectable */
+    }
+  };
+  return (
+    <div className="cmd">
+      <pre>
+        <code>{cmd}</code>
+      </pre>
+      <button type="button" className="copy-btn" onClick={copy} aria-label="Copy command">
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
+
+function TerminalSteps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) {
+  const root = b.roots[os];
+  if (!root) return null;
+  const shell = os === 'windows' ? 'powershell' : 'sh';
+  const cmds = historyCommands({
+    shell,
+    root,
+    profile: b.defaultProfile === undefined ? undefined : profile || b.defaultProfile,
+    file: b.file,
+    label: b.name,
+    mac: os === 'mac',
+  });
+  const desktop = os === 'windows' ? 'Desktop' : '~/Desktop';
+
+  return (
+    <details className="panel terminal">
+      <summary>
+        <strong>Prefer the {os === 'windows' ? 'PowerShell' : 'Terminal'}? Copy it with a command</strong>
+      </summary>
+      <ol className="steps small">
+        <li>
+          {os === 'mac' && (
+            <>
+              Open Terminal: press <Kbd keys={['⌘', 'Space']} />, type <b>Terminal</b> and press <kbd>Return</kbd>.
+            </>
+          )}
+          {os === 'linux' && (
+            <>
+              Open a terminal (<Kbd keys={['Ctrl', 'Alt', 'T']} /> on most desktops).
+            </>
+          )}
+          {os === 'windows' && (
+            <>
+              Open PowerShell: right-click the Start button and choose <b>Terminal</b> or <b>Windows PowerShell</b>.
+            </>
+          )}
+        </li>
+        {(b.family === 'firefox' || b.family === 'safari') && (
+          <li>
+            <b>Quit {b.name} first</b>, so its most recent visits are written to the file.
+          </li>
+        )}
+        {cmds.list && (
+          <li>
+            See which profile you use. This lists every profile's history file, most recently used first:
+            <CommandBlock cmd={cmds.list} />
+            {b.family === 'firefox' ? (
+              <>The folder at the top is the one you use. If it doesn't end in <code>.default-release</code>, type its name into <b>Profile folder</b> above.</>
+            ) : (
+              <>
+                The file at the top is your active profile. If its folder isn't <code>{profile || b.defaultProfile}</code>, type
+                its name (for example <code>Profile 1</code>) into <b>Profile folder</b> above and the commands below update.
+              </>
+            )}
+          </li>
+        )}
+        <li>
+          Copy the history file to your Desktop:
+          <CommandBlock cmd={cmds.copy} />
+          {b.family === 'safari' && (
+            <>
+              If Terminal says <i>Operation not permitted</i>, macOS is protecting the Safari folder. Use the Finder
+              steps above instead, or allow Terminal under System Settings → Privacy &amp; Security → Full Disk Access.
+            </>
+          )}
+        </li>
+        {cmds.reveal && (
+          <li>
+            Optional: show the original file in Finder.
+            <CommandBlock cmd={cmds.reveal} />
+          </li>
+        )}
+        <li>
+          Drop <code>{cmds.copyName}</code> from your {desktop} onto this page.
+        </li>
+      </ol>
+      <p className="small muted">
+        {shell === 'sh' ? (
+          <>
+            Spaces in paths are escaped with a backslash (<code>Application\ Support</code>), so paste the commands as they
+            are. Without the backslash the shell splits the path in two and says the files don't exist.
+          </>
+        ) : (
+          <>
+            PowerShell doesn't use backslashes for escaping, so paths with spaces are wrapped in double quotes instead.
+          </>
+        )}
+      </p>
+    </details>
+  );
+}
+
+function FallbackPaths({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) {
+  const others = (Object.keys(b.roots) as OS[]).filter((o) => o !== os);
   if (!others.length) return null;
   return (
     <details className="small">
@@ -322,7 +480,7 @@ function FallbackPaths({ b, os }: { b: BrowserInfo; os: OS }) {
             <tr key={o}>
               <th>{OS_NAMES[o]}</th>
               <td>
-                <code>{b.folders[o]}</code>
+                <code>{folderFor(b, o, profile)}</code>
               </td>
             </tr>
           ))}
@@ -337,8 +495,10 @@ export function HistoryGuide() {
   const desktopOs: OS = detected.os === 'mac' || detected.os === 'windows' || detected.os === 'linux' ? detected.os : 'mac';
   const [os, setOs] = useState<OS>(desktopOs);
   const [browserId, setBrowserId] = useState<BrowserId>(detected.browser ?? 'chrome');
+  const [profileInput, setProfile] = useState('');
+  const profile = profileInput.trim();
 
-  const available = BROWSERS.filter((b) => b.folders[os]);
+  const available = BROWSERS.filter((b) => b.roots[os]);
   const b = available.find((x) => x.id === browserId) ?? available[0]!;
   const isMobile = detected.os === 'ios' || detected.os === 'android';
 
@@ -365,7 +525,13 @@ export function HistoryGuide() {
         </label>
         <label>
           Browser
-          <select value={b.id} onChange={(e) => setBrowserId(e.target.value as BrowserId)}>
+          <select
+            value={b.id}
+            onChange={(e) => {
+              setBrowserId(e.target.value as BrowserId);
+              setProfile('');
+            }}
+          >
             {available.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.name}
@@ -374,14 +540,37 @@ export function HistoryGuide() {
             ))}
           </select>
         </label>
+        {b.defaultProfile !== undefined && (
+          <label>
+            Profile folder
+            <input
+              type="text"
+              list={`profiles-${b.id}`}
+              value={profileInput}
+              placeholder={b.defaultProfile}
+              onChange={(e) => setProfile(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+            />
+            <datalist id={`profiles-${b.id}`}>
+              {(b.family === 'firefox'
+                ? ['*.default-release', '*.default']
+                : ['Default', 'Profile 1', 'Profile 2', 'Profile 3']
+              ).map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
+          </label>
+        )}
       </div>
 
       <div className="tabpanel">
         <h3>
           {b.name} on {OS_NAMES[os]}
         </h3>
-        <Steps b={b} os={os} />
-        <FallbackPaths b={b} os={os} />
+        <Steps b={b} os={os} profile={profile} />
+        <TerminalSteps b={b} os={os} profile={profile} />
+        <FallbackPaths b={b} os={os} profile={profile} />
       </div>
 
       <details className="panel">

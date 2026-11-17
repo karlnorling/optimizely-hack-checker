@@ -16,6 +16,8 @@ import {
 } from './affectedSites.ts';
 import { Recommendations } from './Recommendations.tsx';
 import { HistoryGuide } from './HistoryGuide.tsx';
+import { OfficialStatement, SourceLinks } from './Sources.tsx';
+import { REPO_URL } from './links.ts';
 
 /** A loaded history source: parse stats, or an error message. */
 export type Source = { name: string; error: string } | ({ name: string; error: null } & ParseStats);
@@ -82,10 +84,14 @@ function Coverage({ sources }: { sources: Source[] }) {
 
 function Summary({ result, sources }: { result: Results; sources: Source[] }) {
   const totalVisits = sources.reduce((n, s) => n + (s.error === null ? s.visits : 0), 0);
-  const exposed = result.findings.filter((f) => f.risk !== 'none');
+  const count = (r: Risk) => result.findings.filter((f) => f.risk === r).length;
+  const high = count('high');
+  const others = count('possible') + count('unknown');
   const { overall } = result;
   const text = ({
-    high: `You visited ${exposed.length === 1 ? 'an affected site' : `${exposed.length} affected sites`} while the malicious script was live.`,
+    high:
+      `You visited ${high === 1 ? 'an affected site' : `${high} affected sites`} while the malicious script was live.` +
+      (others ? ` ${others} more ${others === 1 ? 'needs' : 'need'} a closer look.` : ''),
     possible: 'You visited affected sites close to the infection window. Exposure is possible but not confirmed.',
     unknown: 'You visited affected sites, but the visit times are unknown.',
     none: result.findings.length
@@ -301,11 +307,27 @@ export default function App() {
           crypto wallet addresses, skimmed payment cards, stole cookies and screenshots, and sent iPhones and iPads to
           exploit kits. Check whether your browser history includes those sites during the attack.
         </p>
-        <p className="privacy">
-          🔒 <strong>Everything runs in your browser.</strong> Your history is never uploaded. The page's Content
-          Security Policy blocks it from contacting any other server, and you can disconnect from the internet before
-          loading your file.
-        </p>
+        <div className="privacy">
+          <p>
+            🔒 <strong>Nothing you load or paste here is sent to any server.</strong> This page runs entirely in your
+            browser (client-side only): your history file is read on your own device and never uploaded, stored or
+            logged.
+          </p>
+          <ul className="small">
+            <li>
+              The page's Content Security Policy blocks it from contacting any other server, so it couldn't send your
+              data anywhere even if it tried.
+            </li>
+            <li>You can disconnect from the internet after the page loads, and it still works.</li>
+            <li>
+              It's open source, so anyone can check this:{' '}
+              <a href={REPO_URL} target="_blank" rel="noreferrer">
+                view the code on GitHub
+              </a>
+              .
+            </li>
+          </ul>
+        </div>
       </header>
 
       <section>
@@ -352,18 +374,52 @@ export default function App() {
             onChange={(e) => handleFiles(e.target.files)}
           />
         </div>
-        <details className="paste">
-          <summary>Or paste URLs or hostnames</summary>
+        <div className="paste">
+          <h3>Or paste your history</h3>
+          <p className="small muted">
+            No file needed. Open your browser's history page, select everything and copy it, then paste it here. Lists
+            of hosts or URLs, and spreadsheet or CSV exports, work too. Dates and times are picked up when they're
+            included.
+          </p>
+          <details className="small">
+            <summary>How to copy your history, by browser</summary>
+            <ul>
+              <li>
+                <b>Chrome, Edge, Brave, Vivaldi, Opera, Arc:</b> press <kbd>Ctrl</kbd> <kbd>H</kbd> (<kbd>⌘</kbd>{' '}
+                <kbd>Y</kbd> on a Mac), scroll down past 16 November so it loads, then press <kbd>Ctrl</kbd>{' '}
+                <kbd>A</kbd> (<kbd>⌘</kbd> <kbd>A</kbd>) and <kbd>Ctrl</kbd> <kbd>C</kbd> (<kbd>⌘</kbd> <kbd>C</kbd>).
+                Dates and times come along with each site.
+              </li>
+              <li>
+                <b>Firefox:</b> press <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>H</kbd> (<kbd>⌘</kbd> <kbd>Shift</kbd>{' '}
+                <kbd>H</kbd>) to open the Library, pick a day in the left column, click an entry, select all and copy.
+                This copies URLs only, without times.
+              </li>
+              <li>
+                <b>Safari:</b> choose History → Show All History (<kbd>⌘</kbd> <kbd>Y</kbd>), expand the days around 16
+                November, select the entries and copy. This copies URLs only, without times.
+              </li>
+              <li>
+                <b>Anything else:</b> one URL or hostname per line. Add a date and time on the same line for a
+                time-based result, for example <code>2026-11-16 14:30 www.bbc.com</code>.
+              </li>
+            </ul>
+            <p>
+              Times without a time zone are read in your computer's time zone, the same way the history page shows
+              them.
+            </p>
+          </details>
           <textarea
-            rows={5}
+            rows={7}
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
-            placeholder={'One per line. Add a date and time to get a time-based result, e.g.\n2026-11-16 09:30 https://www.bbc.com/news\nwww.zoom.us'}
+            aria-label="Pasted history"
+            placeholder={'Paste here. For example:\n\nMonday, 16 November 2026\n14:30\nBBC News - Home\nwww.bbc.com\n\nhttps://zoom.us/j/123\n2026-11-16 09:30 www.ledger.com'}
           />
           <button onClick={handlePaste} disabled={!pasted.trim()}>
-            Check pasted list
+            Check pasted history
           </button>
-        </details>
+        </div>
         <Coverage sources={sources} />
         {sources.length > 0 && (
           <button className="link" onClick={reset}>
@@ -385,33 +441,29 @@ export default function App() {
 
       <section>
         <h2>About the attack</h2>
+        <OfficialStatement />
+        <SourceLinks />
         <Timeline />
         <SiteList />
       </section>
 
       <footer className="small muted">
-        Sources:{' '}
-        <a href={SOURCE_URL} target="_blank" rel="noreferrer">
-          Report URI
-        </a>
-        ,{' '}
-        <a
-          href="https://www.bleepingcomputer.com/news/security/optimizely-supply-chain-attack-delivers-malware-to-cnn-fox-news-bbc-salesforce-sites/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          BleepingComputer
-        </a>
-        ,{' '}
-        <a href="https://thecybersecguru.com/news/optimizely-supply-chain-attack-optimjack/" target="_blank" rel="noreferrer">
-          TheCyberSecGuru
-        </a>
-        ,{' '}
-        <a href="https://thehackernews.com/2026/11/hijacked-optimizely-scripts-served-card.html" target="_blank" rel="noreferrer">
-          The Hacker News
-        </a>
-        . This tool isn't affiliated with Optimizely or any affected company. A clean result only covers the history you
-        loaded: private windows, cleared history and other devices aren't included.
+        <p>
+          Open source on{' '}
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          . Host list and timeline from{' '}
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+            Report URI
+          </a>
+          ; see <b>Research and news coverage</b> above for all sources. This tool isn't affiliated with Optimizely or
+          any affected company.
+        </p>
+        <p>
+          A clean result only covers the history you loaded: private windows, cleared history and other devices aren't
+          included.
+        </p>
       </footer>
     </div>
   );
