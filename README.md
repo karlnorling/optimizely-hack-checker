@@ -49,14 +49,15 @@ Written in TypeScript and built with webpack.
 Requires Node 24 or later (the tests and webpack config use Node's built-in TypeScript support).
 
 ```sh
-npm install
-npm run dev        # dev server at http://localhost:5173
-npm run typecheck  # tsc --noEmit
-npm test           # parser and scoring tests
-npm run lint       # oxlint
-npm run format     # oxfmt (format:check in CI)
-npm run build      # static site in dist/
-npm run preview    # serve the production build locally
+corepack enable  # once; uses the Yarn version pinned in package.json
+yarn install
+yarn dev         # dev server at http://localhost:5173
+yarn typecheck   # tsc --noEmit
+yarn test        # parser and scoring tests
+yarn lint        # oxlint
+yarn format      # oxfmt (format:check in CI)
+yarn build       # static site in dist/
+yarn preview     # serve the production build locally
 ```
 
 The CI workflow (`.github/workflows/ci.yml`) runs lint, format check, typecheck, unit tests and
@@ -64,7 +65,7 @@ build on every pull request and push to `main`.
 
 ## Deploy to GitHub Pages
 
-`npm run build` writes plain static files with relative paths to `dist/`, so the site works at any
+`yarn build    ` writes plain static files with relative paths to `dist/`, so the site works at any
 URL path. `dist/` is not committed: the workflow builds it and publishes it as a Pages artifact.
 
 1. Push to a GitHub repo on the `main` branch.
