@@ -35,7 +35,7 @@ const fmtDate = (ms: number | null) => (ms == null ? '?' : new Date(ms).toLocale
 
 const RISK_LABEL: Record<Risk, string> = {
   high: 'High: visited while infected',
-  possible: 'Possible: visited close to the window',
+  possible: 'Possible: visited during the attack window, but this exact page may not have been infected',
   unknown: 'Unknown: visit time not known',
   none: 'Not affected: visited outside the window',
 };
@@ -109,14 +109,15 @@ function Summary({ result, sources }: { result: Results; sources: Source[] }) {
 }
 
 function Findings({ findings }: { findings: Results['findings'] }) {
-  const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? findings : findings.filter((f) => f.risk !== 'none');
-  const hidden = findings.length - visible.length;
+  // Only visits inside the attack window are shown; the rest are just counted.
+  const visible = findings.filter((f) => f.risk !== 'none');
+  const outside = findings.filter((f) => f.risk === 'none');
+  const outsideVisits = outside.reduce((n, f) => n + f.totalVisits, 0);
   if (!findings.length) return null;
   return (
     <section>
-      <h2>Matches in your history</h2>
-      {visible.length === 0 && <p className="muted">No visits during or near the infection window.</p>}
+      <h2>Visits during the attack</h2>
+      {visible.length === 0 && <p className="muted">No visits to affected sites during the attack window.</p>}
       {visible.map((f) => (
         <details key={f.host} className={`finding risk-${f.risk}`} open={f.risk === 'high' || f.match.kind === 'ioc'}>
           <summary>
@@ -124,7 +125,8 @@ function Findings({ findings }: { findings: Results['findings'] }) {
             <span className="muted small">
               {MATCH_LABEL[f.match.kind]}
               {f.match.kind === 'subdomain' || f.match.kind === 'press' ? ` (${f.match.key})` : ''} · {f.match.category} ·{' '}
-              {f.totalVisits} visit{f.totalVisits === 1 ? '' : 's'} in total
+              {f.visits.length} visit{f.visits.length === 1 ? '' : 's'}
+              {f.risk === 'unknown' ? ', time unknown' : ' in the attack window'}
             </span>
           </summary>
           <p className="small">{RISK_LABEL[f.risk]}.</p>
@@ -165,10 +167,11 @@ function Findings({ findings }: { findings: Results['findings'] }) {
           )}
         </details>
       ))}
-      {hidden > 0 && (
-        <button className="link" onClick={() => setShowAll((s) => !s)}>
-          {showAll ? 'Hide' : 'Show'} {hidden} affected site{hidden === 1 ? '' : 's'} you only visited outside the window
-        </button>
+      {outside.length > 0 && (
+        <p className="small muted">
+          Not shown: {outsideVisits.toLocaleString()} visit{outsideVisits === 1 ? '' : 's'} to {outside.length} affected
+          site{outside.length === 1 ? '' : 's'} outside the attack window. Those visits weren't exposed.
+        </p>
       )}
     </section>
   );
@@ -196,10 +199,11 @@ function Timeline() {
         })}
       </ol>
       <p className="small muted">
-        How visits are scored: <b>high</b> means a visit to a listed host between 04:21 and 21:52 UTC on 16 Nov, with
-        per-site start and clean-up times applied where published. <b>Possible</b> means a visit between 02:21 and 04:21 UTC,
-        after clean-up up to the end of 17 Nov (a cached copy of the script could still load), a related host on the
-        same domain, or the earlier 13–16 Nov wave.
+        Only visits inside the attack window are shown. The window is 04:21 to 21:52 UTC on 16 Nov, using each
+        site's own start and clean-up time where published, or 13–16 Nov for sites hit by the earlier wave.{' '}
+        <b>High</b> means a listed host. <b>Possible</b> means a related host on the same domain, a domain named only in
+        news coverage, or the earlier wave. <b>Unknown</b> means a pasted visit without a time. Visits outside the
+        window are counted but not listed.
       </p>
     </details>
   );

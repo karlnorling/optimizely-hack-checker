@@ -120,9 +120,9 @@ export const TIMELINE = {
   skimmerAdded: Date.UTC(2026, 10, 16, 13, 43), // card skimmer added to payload
   iosExploitAdded: Date.UTC(2026, 10, 16, 17, 13), // iOS exploit iframe injected
   lastInfected: Date.UTC(2026, 10, 16, 21, 52), // only one infected snippet left (TalkTalk)
-  // After clean-up a cached copy of the snippet could still have been served
-  // for a while, so visits up to the end of 17 Nov are treated as "possible".
-  cacheTail: Date.UTC(2026, 10, 18, 0, 0),
+  // Sites with no published clean-up time (TalkTalk) count as infected until
+  // the end of 16 Nov UTC, the last point anything was observed.
+  noCleanupEnd: Date.UTC(2026, 10, 17, 0, 0),
   earlierWaveStart: Date.UTC(2026, 10, 13, 0, 0),
   earlierWaveEnd: Date.UTC(2026, 10, 17, 0, 0),
 } as const;

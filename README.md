@@ -20,13 +20,15 @@ Web pages can't read browser history, so the user selects the history file and i
 | Google Takeout | `BrowserHistory.json` | JSON |
 | Anything | pasted URLs/hosts (optionally with ISO timestamps) | text |
 
-Every visit to a matching host is scored against the attack timeline (UTC):
+Only visits inside the attack window are reported (UTC):
 
 - **high**: a listed host between 04:21 and 21:52 on 16 Nov, using per-site start and clean-up
-  times where published (Zoom from 11:20; Ledger, Smartsheet and BBC clean-up times).
-- **possible**: between 02:21 and 04:21, after clean-up up to the end of 17 Nov (a cached copy of
-  the script could still load), a related host on the same domain, a domain named only in news
-  coverage, or the earlier webshell.lol wave (13–16 Nov).
+  times where published (Zoom from 11:20; Ledger, Smartsheet and BBC clean-up times; TalkTalk,
+  with no published clean-up, until the end of 16 Nov).
+- **possible**: inside the window, but on a related host of a listed domain or a domain named only
+  in news coverage; or a visit to an earlier-wave site (webshell.lol, 13–16 Nov).
+- **unknown**: a pasted visit with no date or time.
+- Visits outside the window are counted but not listed.
 - Visits to attacker domains (`1688360.cc`, the `.icu` routers, `webshell.lol`, …) are flagged
   separately.
 

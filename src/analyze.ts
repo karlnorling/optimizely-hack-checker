@@ -137,7 +137,7 @@ export function windowFor(host: string): InfectionWindow {
   const o = key ? WINDOW_OVERRIDES[key] : undefined;
   if (o) {
     if (o.start !== undefined) start = o.start;
-    if (o.end !== undefined) end = o.end === null ? TIMELINE.cacheTail : o.end;
+    if (o.end !== undefined) end = o.end === null ? TIMELINE.noCleanupEnd : o.end;
     note = o.note;
   }
   return { start, end, note };
@@ -149,18 +149,18 @@ export function assessVisit(host: string, match: Match | null, timeMs: number | 
   if (timeMs == null || Number.isNaN(timeMs)) return 'unknown';
 
   if (match.kind === 'ioc') {
-    // Attacker infrastructure was active from mid-September onwards.
-    return timeMs >= Date.UTC(2026, 8, 1) ? 'high' : 'possible';
+    // Attacker infrastructure was first seen in mid-September 2026.
+    return timeMs >= Date.UTC(2026, 8, 1) ? 'high' : 'none';
   }
 
+  // Only visits inside the attack window count. A listed host is "high"; a
+  // related host or a domain only named in the news is "possible", because
+  // the time is right but the exact page may not have been infected.
   let risk: Risk = 'none';
   if (match.kind !== 'earlier') {
     const w = windowFor(host);
     if (timeMs >= w.start && timeMs <= w.end) {
       risk = match.kind === 'listed' ? 'high' : 'possible';
-    } else if (timeMs >= TIMELINE.lastClean && timeMs < TIMELINE.cacheTail) {
-      // Just before first sighting, or after clean-up (stale cached snippet).
-      risk = 'possible';
     }
   }
   if (risk === 'none' && match.earlier) {
