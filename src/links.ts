@@ -42,7 +42,7 @@ export const COVERAGE: readonly Link[] = [
     title: 'Optimizely supply chain attack delivers malware to CNN, Fox News, BBC, Salesforce sites',
     publisher: 'BleepingComputer',
     url: 'https://www.bleepingcomputer.com/news/security/optimizely-supply-chain-attack-delivers-malware-to-cnn-fox-news-bbc-salesforce-sites/',
-    note: "Includes statements from Optimizely and Salesforce.",
+    note: 'Includes statements from Optimizely and Salesforce.',
   },
   {
     title: 'Hijacked Optimizely scripts served card skimmers',

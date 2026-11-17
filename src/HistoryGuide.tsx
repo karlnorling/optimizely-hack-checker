@@ -211,9 +211,8 @@ function OpenFolderStep({ os, folder }: { os: OS; folder: ReactNode }) {
   }
   return (
     <li>
-      Open that folder in your file manager: press <Kbd keys={['Ctrl', 'L']} /> to type a location, paste {folder}{' '}
-      and press <kbd>Enter</kbd>. Folders starting with a dot are hidden; press <Kbd keys={['Ctrl', 'H']} /> to show
-      them.
+      Open that folder in your file manager: press <Kbd keys={['Ctrl', 'L']} /> to type a location, paste {folder} and
+      press <kbd>Enter</kbd>. Folders starting with a dot are hidden; press <Kbd keys={['Ctrl', 'H']} /> to show them.
     </li>
   );
 }
@@ -249,12 +248,12 @@ function Steps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) 
         </li>
         <OpenFolderStep os="mac" folder={<CopyText text="~/Library/Safari" />} />
         <li>
-          Find <code>History.db</code>. Ignore <code>History.db-wal</code>, <code>History.db-shm</code> and the
-          other files next to it.
+          Find <code>History.db</code>. Ignore <code>History.db-wal</code>, <code>History.db-shm</code> and the other
+          files next to it.
         </li>
         <li>
-          <CopyFile os="mac" file="History.db" /> macOS protects <code>~/Library/Safari</code>, so browsers often
-          can't open the original; the copy on your Desktop avoids that.
+          <CopyFile os="mac" file="History.db" /> macOS protects <code>~/Library/Safari</code>, so browsers often can't
+          open the original; the copy on your Desktop avoids that.
         </li>
         <li>Reopen Safari (or any browser), come back to this page and drop the copy from your Desktop below.</li>
         <li className="muted">When you're done, you can delete the copy from your Desktop.</li>
@@ -282,9 +281,9 @@ function Steps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) 
               {b.defaultProfile && (
                 <>
                   {' '}
-                  It ends in <code>Default</code>, or <code>Profile 1</code>, <code>Profile 2</code> and so on if
-                  you've ever added a profile. Type that last part into <b>Profile folder</b> above to update the
-                  paths and commands on this page.
+                  It ends in <code>Default</code>, or <code>Profile 1</code>, <code>Profile 2</code> and so on if you've
+                  ever added a profile. Type that last part into <b>Profile folder</b> above to update the paths and
+                  commands on this page.
                 </>
               )}
             </>
@@ -313,8 +312,8 @@ function Steps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) 
         {b.family === 'chromium' && (
           <>
             {' '}
-            (it has no file extension{os === 'windows' ? '; Explorer shows its type as "File"' : ''}).
-            Ignore <code>History-journal</code>, <code>History Provider Cache</code> and similar files
+            (it has no file extension{os === 'windows' ? '; Explorer shows its type as "File"' : ''}). Ignore{' '}
+            <code>History-journal</code>, <code>History Provider Cache</code> and similar files
           </>
         )}
         {b.family === 'firefox' && (
@@ -328,8 +327,8 @@ function Steps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: string }) 
         {b.family === 'firefox' ? (
           <>
             <b>Quit Firefox completely</b> (<Kbd keys={quitKeys} />
-            {os === 'windows' ? ', or menu → Exit' : ''}). Firefox keeps recent visits in a side file until it quits,
-            so without this step 16 November may be missing. Then: <CopyFile os={os} file="places.sqlite" />
+            {os === 'windows' ? ', or menu → Exit' : ''}). Firefox keeps recent visits in a side file until it quits, so
+            without this step 16 November may be missing. Then: <CopyFile os={os} file="places.sqlite" />
           </>
         ) : (
           <>
@@ -423,11 +422,15 @@ function TerminalSteps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: st
             See which profile you use. This lists every profile's history file, most recently used first:
             <CommandBlock cmd={cmds.list} />
             {b.family === 'firefox' ? (
-              <>The folder at the top is the one you use. If it doesn't end in <code>.default-release</code>, type its name into <b>Profile folder</b> above.</>
+              <>
+                The folder at the top is the one you use. If it doesn't end in <code>.default-release</code>, type its
+                name into <b>Profile folder</b> above.
+              </>
             ) : (
               <>
-                The file at the top is your active profile. If its folder isn't <code>{profile || b.defaultProfile}</code>, type
-                its name (for example <code>Profile 1</code>) into <b>Profile folder</b> above and the commands below update.
+                The file at the top is your active profile. If its folder isn't{' '}
+                <code>{profile || b.defaultProfile}</code>, type its name (for example <code>Profile 1</code>) into{' '}
+                <b>Profile folder</b> above and the commands below update.
               </>
             )}
           </li>
@@ -455,8 +458,8 @@ function TerminalSteps({ b, os, profile }: { b: BrowserInfo; os: OS; profile: st
       <p className="small muted">
         {shell === 'sh' ? (
           <>
-            Spaces in paths are escaped with a backslash (<code>Application\ Support</code>), so paste the commands as they
-            are. Without the backslash the shell splits the path in two and says the files don't exist.
+            Spaces in paths are escaped with a backslash (<code>Application\ Support</code>), so paste the commands as
+            they are. Without the backslash the shell splits the path in two and says the files don't exist.
           </>
         ) : (
           <>
@@ -492,7 +495,8 @@ function FallbackPaths({ b, os, profile }: { b: BrowserInfo; os: OS; profile: st
 
 export function HistoryGuide() {
   const [detected] = useState(detect);
-  const desktopOs: OS = detected.os === 'mac' || detected.os === 'windows' || detected.os === 'linux' ? detected.os : 'mac';
+  const desktopOs: OS =
+    detected.os === 'mac' || detected.os === 'windows' || detected.os === 'linux' ? detected.os : 'mac';
   const [os, setOs] = useState<OS>(desktopOs);
   const [browserId, setBrowserId] = useState<BrowserId>(detected.browser ?? 'chrome');
   const [profileInput, setProfile] = useState('');
@@ -506,8 +510,8 @@ export function HistoryGuide() {
     <div className="guide">
       {isMobile && (
         <div className="rec urgent small">
-          <b>You're on {detected.os === 'ios' ? 'an iPhone or iPad' : 'a phone'}.</b> Phones don't let you export browser
-          history as a file. See <a href="#mobile">checking a phone</a> below, or open this page on a computer.
+          <b>You're on {detected.os === 'ios' ? 'an iPhone or iPad' : 'a phone'}.</b> Phones don't let you export
+          browser history as a file. See <a href="#mobile">checking a phone</a> below, or open this page on a computer.
         </div>
       )}
 
@@ -625,12 +629,12 @@ export function HistoryGuide() {
           </li>
           <li>
             <b>Otherwise:</b> open the browser's history on the phone (Safari: bookmarks icon → clock tab; Chrome: ⋮ →
-            History) and scroll to 16 November. Type any affected sites you see into the paste box below, with the
-            date and time, for example <code>2026-11-16 14:30 www.bbc.com</code>.
+            History) and scroll to 16 November. Type any affected sites you see into the paste box below, with the date
+            and time, for example <code>2026-11-16 14:30 www.bbc.com</code>.
           </li>
           <li>
-            Whatever you find, update iPhones and iPads to iOS 18.7.3 or later, or 26.3 or later. The attack
-            targeted iOS directly.
+            Whatever you find, update iPhones and iPads to iOS 18.7.3 or later, or 26.3 or later. The attack targeted
+            iOS directly.
           </li>
         </ul>
       </details>
@@ -648,14 +652,14 @@ export function HistoryGuide() {
           </dd>
           <dt>The page says it can't read the file, or it's "not a recognised" database.</dt>
           <dd>
-            Make sure you picked <code>History</code>, <code>places.sqlite</code> or <code>History.db</code> itself,
-            not a file ending in <code>-journal</code>, <code>-wal</code> or <code>-shm</code>. Load the copy on your
+            Make sure you picked <code>History</code>, <code>places.sqlite</code> or <code>History.db</code> itself, not
+            a file ending in <code>-journal</code>, <code>-wal</code> or <code>-shm</code>. Load the copy on your
             Desktop rather than the original.
           </dd>
           <dt>It says my history doesn't cover 16 November.</dt>
           <dd>
-            Either the browser was still open when you copied the file (quit it and copy again), you picked a
-            different profile, or the history was cleared. Private and incognito windows are never saved.
+            Either the browser was still open when you copied the file (quit it and copy again), you picked a different
+            profile, or the history was cleared. Private and incognito windows are never saved.
           </dd>
           <dt>Is it safe to copy these files?</dt>
           <dd>

@@ -26,12 +26,11 @@ let sqlPromise: Promise<SqlJsStatic> | null = null;
 const getSql = () => (sqlPromise ??= initSqlJs({ locateFile: () => wasmUrl }));
 
 const fmtLocal = (ms: number | null) =>
-  ms == null
-    ? 'unknown time'
-    : new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  ms == null ? 'unknown time' : new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const fmtUtc = (ms: number | null) =>
   ms == null ? '' : new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
-const fmtDate = (ms: number | null) => (ms == null ? '?' : new Date(ms).toLocaleDateString(undefined, { dateStyle: 'medium' }));
+const fmtDate = (ms: number | null) =>
+  ms == null ? '?' : new Date(ms).toLocaleDateString(undefined, { dateStyle: 'medium' });
 
 const RISK_LABEL: Record<Risk, string> = {
   high: 'High: visited while infected',
@@ -61,7 +60,10 @@ function Coverage({ sources }: { sources: Source[] }) {
           );
         }
         const coversIncident =
-          s.minTime != null && s.maxTime != null && s.minTime <= TIMELINE.lastInfected && s.maxTime >= TIMELINE.firstInfected;
+          s.minTime != null &&
+          s.maxTime != null &&
+          s.minTime <= TIMELINE.lastInfected &&
+          s.maxTime >= TIMELINE.firstInfected;
         return (
           <li key={i}>
             <strong>{s.name}</strong>{' '}
@@ -88,17 +90,19 @@ function Summary({ result, sources }: { result: Results; sources: Source[] }) {
   const high = count('high');
   const others = count('possible') + count('unknown');
   const { overall } = result;
-  const text = ({
-    high:
-      `You visited ${high === 1 ? 'an affected site' : `${high} affected sites`} while the malicious script was live.` +
-      (others ? ` ${others} more ${others === 1 ? 'needs' : 'need'} a closer look.` : ''),
-    possible:
-      'During the attack you visited related pages on affected domains, or sites from the earlier wave. Exposure is possible but not confirmed.',
-    unknown: 'You visited affected sites, but the visit times are unknown.',
-    none: result.findings.length
-      ? 'You visited affected sites, but not during the published attack window.'
-      : 'None of the affected sites appear in this history.',
-  } satisfies Record<Risk, string>)[overall];
+  const text = (
+    {
+      high:
+        `You visited ${high === 1 ? 'an affected site' : `${high} affected sites`} while the malicious script was live.` +
+        (others ? ` ${others} more ${others === 1 ? 'needs' : 'need'} a closer look.` : ''),
+      possible:
+        'During the attack you visited related pages on affected domains, or sites from the earlier wave. Exposure is possible but not confirmed.',
+      unknown: 'You visited affected sites, but the visit times are unknown.',
+      none: result.findings.length
+        ? 'You visited affected sites, but not during the published attack window.'
+        : 'None of the affected sites appear in this history.',
+    } satisfies Record<Risk, string>
+  )[overall];
   return (
     <div className={`summary risk-${overall}`}>
       <div className="summary-title">{text}</div>
@@ -127,8 +131,8 @@ function Findings({ findings }: { findings: Results['findings'] }) {
             <span className={`badge badge-${f.risk}`}>{f.risk}</span> <strong>{f.host}</strong>{' '}
             <span className="muted small">
               {MATCH_LABEL[f.match.kind]}
-              {f.match.kind === 'subdomain' || f.match.kind === 'press' ? ` (${f.match.key})` : ''} · {f.match.category} ·{' '}
-              {f.windowVisits} visit{f.windowVisits === 1 ? '' : 's'}
+              {f.match.kind === 'subdomain' || f.match.kind === 'press' ? ` (${f.match.key})` : ''} · {f.match.category}{' '}
+              · {f.windowVisits} visit{f.windowVisits === 1 ? '' : 's'}
               {f.risk === 'unknown' ? ', time unknown' : ' in the attack window'}
             </span>
           </summary>
@@ -143,7 +147,9 @@ function Findings({ findings }: { findings: Results['findings'] }) {
             <p className="small muted">This domain was also hit by the earlier webshell.lol wave (13–16 Nov).</p>
           )}
           {f.windowVisits > f.visits.length && (
-            <p className="small muted">Showing the first {f.visits.length} of {f.windowVisits} visits.</p>
+            <p className="small muted">
+              Showing the first {f.visits.length} of {f.windowVisits} visits.
+            </p>
           )}
           {f.visits.length > 0 && (
             <table className="visits">
@@ -205,14 +211,13 @@ function Timeline() {
         })}
       </ol>
       <p className="small muted">
-        Only visits inside the attack window are shown. The window is 04:21 to 21:52 UTC on 16 Nov, using each
-        site's own start and clean-up time where published. TalkTalk had no published clean-up, so it runs until
-        Optimizely's statement at 01:02 UTC on 17 Nov. Sites hit by the earlier wave are checked for 13–16 Nov.{' '}
-        <b>High</b> means a listed host inside its window. <b>Possible</b> means a related host on the same domain, a
-        domain named only in news coverage, the earlier wave, or a visit between the last clean capture (02:21) and
-        the first infected one (04:21). <b>Unknown</b> means a pasted visit without a time. Visits to attacker
-        domains count from September until Optimizely's statement. Visits outside the window are counted but not
-        listed.
+        Only visits inside the attack window are shown. The window is 04:21 to 21:52 UTC on 16 Nov, using each site's
+        own start and clean-up time where published. TalkTalk had no published clean-up, so it runs until Optimizely's
+        statement at 01:02 UTC on 17 Nov. Sites hit by the earlier wave are checked for 13–16 Nov. <b>High</b> means a
+        listed host inside its window. <b>Possible</b> means a related host on the same domain, a domain named only in
+        news coverage, the earlier wave, or a visit between the last clean capture (02:21) and the first infected one
+        (04:21). <b>Unknown</b> means a pasted visit without a time. Visits to attacker domains count from September
+        until Optimizely's statement. Visits outside the window are counted but not listed.
       </p>
     </details>
   );
@@ -223,7 +228,10 @@ function SiteList() {
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return Object.entries(CATEGORIES)
-      .map(([cat, hosts]): [string, readonly string[]] => [cat, needle ? hosts.filter((h) => h.includes(needle)) : hosts])
+      .map(([cat, hosts]): [string, readonly string[]] => [
+        cat,
+        needle ? hosts.filter((h) => h.includes(needle)) : hosts,
+      ])
       .filter(([, hosts]) => hosts.length > 0);
   }, [q]);
   return (
@@ -259,9 +267,7 @@ function SiteList() {
         <h4>Attacker domains</h4>
         <p className="hosts">{IOC_DOMAINS.join(', ')}</p>
       </div>
-      <p className="small muted">
-        The source tables shorten a few rows ("+4 more"), so the list is not complete.
-      </p>
+      <p className="small muted">The source tables shorten a few rows ("+4 more"), so the list is not complete.</p>
     </details>
   );
 }
@@ -346,8 +352,8 @@ export default function App() {
       <section>
         <h2>1. Find your history file</h2>
         <p className="muted">
-          Web pages aren't allowed to read your browser history, so you need to give this page a copy of the
-          history file. It takes about two minutes. Pick your computer and browser for step-by-step instructions.
+          Web pages aren't allowed to read your browser history, so you need to give this page a copy of the history
+          file. It takes about two minutes. Pick your computer and browser for step-by-step instructions.
         </p>
         <HistoryGuide />
       </section>
@@ -379,13 +385,7 @@ export default function App() {
               <code>BrowserHistory.json</code> here, or <u>choose files</u>
             </span>
           )}
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            hidden
-            onChange={(e) => handleFiles(e.target.files)}
-          />
+          <input ref={inputRef} type="file" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
         </div>
         <div className="paste">
           <h3>Or paste your history</h3>
@@ -418,8 +418,7 @@ export default function App() {
               </li>
             </ul>
             <p>
-              Times without a time zone are read in your computer's time zone, the same way the history page shows
-              them.
+              Times without a time zone are read in your computer's time zone, the same way the history page shows them.
             </p>
           </details>
           <textarea
@@ -427,7 +426,9 @@ export default function App() {
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
             aria-label="Pasted history"
-            placeholder={'Paste here. For example:\n\nMonday, 16 November 2026\n14:30\nBBC News - Home\nwww.bbc.com\n\nhttps://zoom.us/j/123\n2026-11-16 09:30 www.ledger.com'}
+            placeholder={
+              'Paste here. For example:\n\nMonday, 16 November 2026\n14:30\nBBC News - Home\nwww.bbc.com\n\nhttps://zoom.us/j/123\n2026-11-16 09:30 www.ledger.com'
+            }
           />
           <button onClick={handlePaste} disabled={!pasted.trim()}>
             Check pasted history

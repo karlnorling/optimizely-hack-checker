@@ -94,7 +94,10 @@ test('epoch timestamps', () => {
 https://b.example.com/,${ms}
 https://c.example.com/,${ms * 1000}
 https://d.example.com/,${(ms + 11644473600000) * 1000}`);
-  assert.deepEqual(v.map((x) => x[1]), [ms, ms, ms, ms]);
+  assert.deepEqual(
+    v.map((x) => x[1]),
+    [ms, ms, ms, ms],
+  );
 });
 
 test('bare hostnames, with and without dates; date-only near the window is unknown', () => {

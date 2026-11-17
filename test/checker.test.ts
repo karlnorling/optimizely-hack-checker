@@ -56,11 +56,17 @@ test('visit risk windows', () => {
   assert.equal(assessVisit('www.faz.net', e, utc(10, 0, 20)), 'none');
 });
 
+/** Chromium time: microseconds since 1601-01-01. */
+const chrome = (ms: number) => (ms + 11644473600000) * 1000;
+
 test('Chrome History database', () => {
   const db = new SQL.Database();
-  db.run('CREATE TABLE urls(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE visits(id INTEGER PRIMARY KEY, url INTEGER, visit_time INTEGER);');
-  const chrome = (ms: number) => (ms + 11644473600000) * 1000;
-  db.run("INSERT INTO urls VALUES (1,'https://www.bbc.com/news'),(2,'https://example.com/'),(3,'https://www.ledger.com/')");
+  db.run(
+    'CREATE TABLE urls(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE visits(id INTEGER PRIMARY KEY, url INTEGER, visit_time INTEGER);',
+  );
+  db.run(
+    "INSERT INTO urls VALUES (1,'https://www.bbc.com/news'),(2,'https://example.com/'),(3,'https://www.ledger.com/')",
+  );
   db.run(`INSERT INTO visits VALUES (1,1,${chrome(utc(14))}),(2,2,${chrome(utc(14))}),(3,3,${chrome(utc(10, 0, 1))})`);
   const r = run((cb) => parseSqlite(SQL, db.export(), cb));
   assert.equal(r.stats.visits, 3);
@@ -72,7 +78,9 @@ test('Chrome History database', () => {
 
 test('Firefox places.sqlite', () => {
   const db = new SQL.Database();
-  db.run('CREATE TABLE moz_places(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE moz_historyvisits(id INTEGER PRIMARY KEY, place_id INTEGER, visit_date INTEGER);');
+  db.run(
+    'CREATE TABLE moz_places(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE moz_historyvisits(id INTEGER PRIMARY KEY, place_id INTEGER, visit_date INTEGER);',
+  );
   db.run("INSERT INTO moz_places VALUES (1,'https://zoom.us/j/123')");
   db.run(`INSERT INTO moz_historyvisits VALUES (1,1,${utc(12) * 1000})`);
   const r = run((cb) => parseSqlite(SQL, db.export(), cb));
@@ -83,7 +91,9 @@ test('Firefox places.sqlite', () => {
 
 test('Safari History.db', () => {
   const db = new SQL.Database();
-  db.run('CREATE TABLE history_items(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE history_visits(id INTEGER PRIMARY KEY, history_item INTEGER, visit_time REAL);');
+  db.run(
+    'CREATE TABLE history_items(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE history_visits(id INTEGER PRIMARY KEY, history_item INTEGER, visit_time REAL);',
+  );
   db.run("INSERT INTO history_items VALUES (1,'https://www.alaskaair.com/')");
   db.run(`INSERT INTO history_visits VALUES (1,1,${(utc(18) - 978307200000) / 1000})`);
   const r = run((cb) => parseSqlite(SQL, db.export(), cb));
