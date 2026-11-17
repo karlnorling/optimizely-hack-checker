@@ -1,4 +1,6 @@
-export function Recommendations({ result }) {
+import type { Results } from './analyze.ts';
+
+export function Recommendations({ result }: { result: Results }) {
   const { overall, flags, findings } = result;
   const exposed = overall === 'high' || overall === 'possible' || overall === 'unknown';
 

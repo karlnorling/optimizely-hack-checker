@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import initSqlJs from 'sql.js';
-import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import { Analyzer } from './analyze.js';
-import { parseFile, parseText } from './parsers.js';
+import initSqlJs, { type SqlJsStatic } from 'sql.js';
+import wasmUrl from 'sql.js/dist/sql-wasm-browser.wasm';
+import { Analyzer, type MatchKind, type Results, type Risk } from './analyze.ts';
+import { parseFile, parseText, type ParseStats } from './parsers.ts';
 import {
   CATEGORIES,
   EARLIER_WAVE_HOSTS,
@@ -13,28 +13,31 @@ import {
   TIMELINE,
   TIMELINE_EVENTS,
   TOTAL_HOSTS,
-} from './affectedSites.js';
-import { Recommendations } from './Recommendations.jsx';
+} from './affectedSites.ts';
+import { Recommendations } from './Recommendations.tsx';
 
-let sqlPromise = null;
+/** A loaded history source: parse stats, or an error message. */
+export type Source = { name: string; error: string } | ({ name: string; error: null } & ParseStats);
+
+let sqlPromise: Promise<SqlJsStatic> | null = null;
 const getSql = () => (sqlPromise ??= initSqlJs({ locateFile: () => wasmUrl }));
 
-const fmtLocal = (ms) =>
+const fmtLocal = (ms: number | null) =>
   ms == null
     ? 'unknown time'
     : new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const fmtUtc = (ms) =>
+const fmtUtc = (ms: number | null) =>
   ms == null ? '' : new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
-const fmtDate = (ms) => (ms == null ? '?' : new Date(ms).toLocaleDateString(undefined, { dateStyle: 'medium' }));
+const fmtDate = (ms: number | null) => (ms == null ? '?' : new Date(ms).toLocaleDateString(undefined, { dateStyle: 'medium' }));
 
-const RISK_LABEL = {
+const RISK_LABEL: Record<Risk, string> = {
   high: 'High: visited while infected',
   possible: 'Possible: visited close to the window',
   unknown: 'Unknown: visit time not known',
   none: 'Not affected: visited outside the window',
 };
 
-const MATCH_LABEL = {
+const MATCH_LABEL: Record<MatchKind, string> = {
   ioc: 'Attacker domain',
   listed: 'Listed host',
   subdomain: 'Related host',
@@ -42,7 +45,13 @@ const MATCH_LABEL = {
   earlier: 'Earlier wave',
 };
 
-const BROWSER_GUIDES = [
+interface BrowserGuide {
+  name: string;
+  paths: ReadonlyArray<readonly [os: string, path: string]>;
+  note: string;
+}
+
+const BROWSER_GUIDES: readonly BrowserGuide[] = [
   {
     name: 'Chrome',
     paths: [
@@ -98,7 +107,7 @@ const BROWSER_GUIDES = [
 
 function HowTo() {
   const [open, setOpen] = useState('Chrome');
-  const guide = BROWSER_GUIDES.find((g) => g.name === open);
+  const guide = BROWSER_GUIDES.find((g) => g.name === open) ?? BROWSER_GUIDES[0]!;
   return (
     <div className="howto">
       <div className="tabs" role="tablist">
@@ -137,31 +146,32 @@ function HowTo() {
   );
 }
 
-function Coverage({ sources }) {
+function Coverage({ sources }: { sources: Source[] }) {
   if (!sources.length) return null;
   return (
     <ul className="coverage">
       {sources.map((s, i) => {
+        if (s.error !== null) {
+          return (
+            <li key={i} className="err">
+              <strong>{s.name}</strong> <span>{s.error}</span>
+            </li>
+          );
+        }
         const coversIncident =
           s.minTime != null && s.maxTime != null && s.minTime <= TIMELINE.lastInfected && s.maxTime >= TIMELINE.firstInfected;
         return (
-          <li key={i} className={s.error ? 'err' : ''}>
+          <li key={i}>
             <strong>{s.name}</strong>{' '}
-            {s.error ? (
-              <span>{s.error}</span>
-            ) : (
-              <>
-                <span className="muted">
-                  {s.browser}: {s.visits.toLocaleString()} visits
-                  {s.minTime != null && `, ${fmtDate(s.minTime)} to ${fmtDate(s.maxTime)}`}
-                </span>
-                {s.minTime != null && !coversIncident && (
-                  <div className="warn small">
-                    ⚠ This history does not cover 16 November 2026, so it can't show whether you were exposed. Quit
-                    the browser and load the file again, or check a different profile or device.
-                  </div>
-                )}
-              </>
+            <span className="muted">
+              {s.browser}: {s.visits.toLocaleString()} visits
+              {s.minTime != null && `, ${fmtDate(s.minTime)} to ${fmtDate(s.maxTime)}`}
+            </span>
+            {s.minTime != null && !coversIncident && (
+              <div className="warn small">
+                ⚠ This history does not cover 16 November 2026, so it can't show whether you were exposed. Quit the
+                browser and load the file again, or check a different profile or device.
+              </div>
             )}
           </li>
         );
@@ -170,29 +180,29 @@ function Coverage({ sources }) {
   );
 }
 
-function Summary({ result, sources }) {
-  const totalVisits = sources.reduce((n, s) => n + (s.visits || 0), 0);
+function Summary({ result, sources }: { result: Results; sources: Source[] }) {
+  const totalVisits = sources.reduce((n, s) => n + (s.error === null ? s.visits : 0), 0);
   const exposed = result.findings.filter((f) => f.risk !== 'none');
   const { overall } = result;
-  const text = {
+  const text = ({
     high: `You visited ${exposed.length === 1 ? 'an affected site' : `${exposed.length} affected sites`} while the malicious script was live.`,
     possible: 'You visited affected sites close to the infection window. Exposure is possible but not confirmed.',
     unknown: 'You visited affected sites, but the visit times are unknown.',
     none: result.findings.length
       ? 'You visited affected sites, but not during the infection window.'
       : 'None of the affected sites appear in this history.',
-  }[overall];
+  } satisfies Record<Risk, string>)[overall];
   return (
     <div className={`summary risk-${overall}`}>
       <div className="summary-title">{text}</div>
       <div className="small">
-        Checked {totalVisits.toLocaleString()} visits from {sources.filter((s) => !s.error).length} source(s).
+        Checked {totalVisits.toLocaleString()} visits from {sources.filter((s) => s.error === null).length} source(s).
       </div>
     </div>
   );
 }
 
-function Findings({ findings }) {
+function Findings({ findings }: { findings: Results['findings'] }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? findings : findings.filter((f) => f.risk !== 'none');
   const hidden = findings.length - visible.length;
@@ -294,8 +304,8 @@ function SiteList() {
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return Object.entries(CATEGORIES)
-      .map(([cat, hosts]) => [cat, needle ? hosts.filter((h) => h.includes(needle)) : hosts])
-      .filter(([, hosts]) => hosts.length);
+      .map(([cat, hosts]): [string, readonly string[]] => [cat, needle ? hosts.filter((h) => h.includes(needle)) : hosts])
+      .filter(([, hosts]) => hosts.length > 0);
   }, [q]);
   return (
     <details className="panel">
@@ -338,26 +348,26 @@ function SiteList() {
 }
 
 export default function App() {
-  const [sources, setSources] = useState([]);
-  const [result, setResult] = useState(null);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [result, setResult] = useState<Results | null>(null);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const [pasted, setPasted] = useState('');
   const analyzerRef = useRef(new Analyzer());
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFiles = useCallback(async (fileList) => {
-    const files = [...fileList];
+  const handleFiles = useCallback(async (fileList: FileList | null) => {
+    const files = fileList ? [...fileList] : [];
     if (!files.length) return;
     setBusy(true);
     const analyzer = analyzerRef.current;
-    const added = [];
+    const added: Source[] = [];
     for (const file of files) {
       try {
         const stats = await parseFile(file, getSql, (url, t) => analyzer.add(url, t, file.name));
-        added.push({ name: file.name, ...stats });
+        added.push({ name: file.name, error: null, ...stats });
       } catch (e) {
-        added.push({ name: file.name, error: e.message || String(e) });
+        added.push({ name: file.name, error: e instanceof Error ? e.message : String(e) });
       }
     }
     setSources((s) => [...s, ...added]);
@@ -369,7 +379,7 @@ export default function App() {
     if (!pasted.trim()) return;
     const analyzer = analyzerRef.current;
     const stats = parseText(pasted, (url, t) => analyzer.add(url, t, 'pasted'), 'Pasted list');
-    setSources((s) => [...s, { name: 'Pasted text', ...stats }]);
+    setSources((s) => [...s, { name: 'Pasted text', error: null, ...stats }]);
     setResult(analyzer.results());
     setPasted('');
   };
