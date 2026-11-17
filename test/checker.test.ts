@@ -31,15 +31,21 @@ test('host matching', () => {
 test('visit risk windows', () => {
   const m = matchHost('www.bbc.com');
   assert.equal(assessVisit('www.bbc.com', m, utc(10)), 'high');
-  assert.equal(assessVisit('www.bbc.com', m, utc(3)), 'possible');
-  assert.equal(assessVisit('www.bbc.com', m, utc(21, 30)), 'possible'); // cleaned 21:07
+  assert.equal(assessVisit('www.bbc.com', m, utc(3)), 'none'); // before first sighting 04:21
+  assert.equal(assessVisit('www.bbc.com', m, utc(21, 30)), 'none'); // cleaned 21:07
+  assert.equal(assessVisit('www.bbc.com', m, utc(10, 0, 17)), 'none'); // next day
   assert.equal(assessVisit('www.bbc.com', m, utc(10, 0, 18)), 'none');
   assert.equal(assessVisit('www.bbc.com', m, null), 'unknown');
   const z = matchHost('zoom.us');
-  assert.equal(assessVisit('zoom.us', z, utc(9)), 'possible'); // before 11:20 override
+  assert.equal(assessVisit('zoom.us', z, utc(9)), 'none'); // before 11:20 override
   assert.equal(assessVisit('zoom.us', z, utc(12)), 'high');
   const t = matchHost('www.talktalk.co.uk');
   assert.equal(assessVisit('www.talktalk.co.uk', t, utc(23)), 'high'); // never confirmed clean
+  assert.equal(assessVisit('www.talktalk.co.uk', t, utc(1, 0, 17)), 'none');
+  const s = matchHost('status.optimizely.com');
+  assert.equal(assessVisit('status.optimizely.com', s, utc(10)), 'possible');
+  assert.equal(assessVisit('status.optimizely.com', s, utc(8, 0, 17)), 'none'); // reading about it today
+  assert.equal(assessVisit('1688360.cc', matchHost('1688360.cc'), Date.UTC(2025, 0, 1)), 'none');
   const e = matchHost('www.faz.net');
   assert.equal(assessVisit('www.faz.net', e, utc(10, 0, 14)), 'possible');
   assert.equal(assessVisit('www.faz.net', e, utc(10, 0, 20)), 'none');
