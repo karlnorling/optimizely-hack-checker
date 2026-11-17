@@ -3,6 +3,9 @@
 // Note: the source post truncates a few table rows ("+N more"), so this list is
 // not 100% complete.
 
+/** When the host list and timeline were last checked against the sources. */
+export const DATA_AS_OF = '2026-11-17T01:02Z';
+
 export const SOURCE_URL = 'https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/';
 
 export const CATEGORIES: Record<string, readonly string[]> = {

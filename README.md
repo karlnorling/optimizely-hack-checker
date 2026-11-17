@@ -71,3 +71,18 @@ URL path. `dist/` is not committed: the workflow builds it and publishes it as a
 1. Push to a GitHub repo on the `main` branch.
 2. Go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
 3. `.github/workflows/deploy.yml` typechecks, tests, builds and deploys `dist/` on every push to `main`.
+
+## Verifying the live site
+
+The page footer shows the commit and GitHub Actions run that built the live site, so you can check
+it was built from this repository. The production build's Content Security Policy only allows the
+page to load its own files, and once loaded it works offline.
+
+## Contributing
+
+Missing or wrong site? [Open an issue](https://github.com/karlnorling/optimizely-hack-checker/issues/new?template=add-site.yml)
+with a public source. Please don't post your own browser history.
+
+## License
+
+[MIT](LICENSE)
