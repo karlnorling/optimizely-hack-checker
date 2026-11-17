@@ -1,4 +1,5 @@
 export const REPO_URL = 'https://github.com/karlnorling/optimizely-hack-checker';
+export const ADD_SITE_URL = `${REPO_URL}/issues/new?template=add-site.yml`;
 
 export interface Link {
   title: string;

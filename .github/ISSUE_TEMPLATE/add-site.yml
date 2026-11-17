@@ -1,0 +1,32 @@
+name: Add or correct an affected site
+description: Report a site that served the malicious Optimizely script but is missing or wrong in the checker.
+title: 'Site: '
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please **don't paste your own browser history** here. Issues are public.
+  - type: input
+    id: host
+    attributes:
+      label: Hostname
+      placeholder: www.example.com
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: A public link confirming the site was infected (research post, vendor statement, archived snapshot).
+    validations:
+      required: true
+  - type: input
+    id: window
+    attributes:
+      label: Infection window (UTC), if known
+      placeholder: 2026-11-16 04:21 – 21:52
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes

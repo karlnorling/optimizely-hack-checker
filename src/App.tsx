@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import initSqlJs, { type SqlJsStatic } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm-browser.wasm';
 import { Analyzer, type MatchKind, type Results, type Risk } from './analyze.ts';
 import { parseFile, parseText, type ParseStats } from './parsers.ts';
 import {
   CATEGORIES,
+  DATA_AS_OF,
   EARLIER_WAVE_HOSTS,
   EARLIER_WAVE_LABELS,
   IOC_DOMAINS,
@@ -17,13 +18,17 @@ import {
 import { Recommendations } from './Recommendations.tsx';
 import { HistoryGuide } from './HistoryGuide.tsx';
 import { OfficialStatement, SourceLinks } from './Sources.tsx';
-import { REPO_URL } from './links.ts';
+import { ADD_SITE_URL, REPO_URL } from './links.ts';
 
 /** A loaded history source: parse stats, or an error message. */
 export type Source = { name: string; error: string } | ({ name: string; error: null } & ParseStats);
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
-const getSql = () => (sqlPromise ??= initSqlJs({ locateFile: () => wasmUrl }));
+const getSql = () =>
+  (sqlPromise ??= initSqlJs({ locateFile: () => wasmUrl }).catch((e: unknown) => {
+    sqlPromise = null; // allow a retry, e.g. once the network is back
+    throw e;
+  }));
 
 const fmtLocal = (ms: number | null) =>
   ms == null ? 'unknown time' : new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -100,7 +105,7 @@ function Summary({ result, sources }: { result: Results; sources: Source[] }) {
       unknown: 'You visited affected sites, but the visit times are unknown.',
       none: result.findings.length
         ? 'You visited affected sites, but not during the published attack window.'
-        : 'None of the affected sites appear in this history.',
+        : 'None of the published affected sites appear in this history.',
     } satisfies Record<Risk, string>
   )[overall];
   return (
@@ -109,6 +114,12 @@ function Summary({ result, sources }: { result: Results; sources: Source[] }) {
       <div className="small">
         Checked {totalVisits.toLocaleString()} visits from {sources.filter((s) => s.error === null).length} source(s).
       </div>
+      {overall === 'none' && (
+        <div className="small">
+          This isn't an all-clear. It only covers the history you loaded and the sites published so far. Private
+          windows, cleared history and other devices aren't included.
+        </div>
+      )}
     </div>
   );
 }
@@ -223,6 +234,31 @@ function Timeline() {
   );
 }
 
+/** Shows which commit and CI run produced this build, so anyone can check it matches the source. */
+function BuildStamp() {
+  const { commit, runUrl, time } = BUILD_INFO;
+  const built = new Date(time).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  if (!commit) return <p>Local build, {built}.</p>;
+  return (
+    <p>
+      Built {built} from commit{' '}
+      <a href={`${REPO_URL}/commit/${commit}`} target="_blank" rel="noreferrer">
+        <code>{commit.slice(0, 7)}</code>
+      </a>
+      {runUrl && (
+        <>
+          {' '}
+          by{' '}
+          <a href={runUrl} target="_blank" rel="noreferrer">
+            this GitHub Actions run
+          </a>
+        </>
+      )}
+      .
+    </p>
+  );
+}
+
 function SiteList() {
   const [q, setQ] = useState('');
   const filtered = useMemo(() => {
@@ -239,6 +275,13 @@ function SiteList() {
       <summary>
         <strong>All {TOTAL_HOSTS} affected hosts</strong>
       </summary>
+      <p className="small muted">
+        Data as of {fmtUtc(Date.parse(DATA_AS_OF))}. Know of a site that's missing?{' '}
+        <a href={ADD_SITE_URL} target="_blank" rel="noreferrer">
+          Report it on GitHub
+        </a>
+        .
+      </p>
       <input
         type="search"
         className="search"
@@ -280,6 +323,12 @@ export default function App() {
   const [pasted, setPasted] = useState('');
   const analyzerRef = useRef(new Analyzer());
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch the SQLite engine straight away, so files can still be read after
+  // the visitor goes offline.
+  useEffect(() => {
+    getSql().catch(() => {});
+  }, []);
 
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     const files = fileList ? [...fileList] : [];
@@ -337,7 +386,10 @@ export default function App() {
               The page's Content Security Policy blocks it from contacting any other server, so it couldn't send your
               data anywhere even if it tried.
             </li>
-            <li>You can disconnect from the internet after the page loads, and it still works.</li>
+            <li>
+              Test it yourself: once this page has loaded, turn off Wi-Fi or unplug the network, then load your history.
+              It still works.
+            </li>
             <li>
               It's open source, so anyone can check this:{' '}
               <a href={REPO_URL} target="_blank" rel="noreferrer">
@@ -478,6 +530,7 @@ export default function App() {
           A clean result only covers the history you loaded: private windows, cleared history and other devices aren't
           included.
         </p>
+        <BuildStamp />
       </footer>
     </div>
   );
